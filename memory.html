@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Card Game - เกมจับคู่การ์ด</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            min-height: 100vh;
+        }
+
+        /* 3D Card Flip Styles */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card.matched .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        /* Front of card (Shown when hidden/unflipped) */
+        .card-front {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Back of card (Shown when flipped) */
+        .card-back {
+            background: linear-gradient(145deg, #38bdf8, #818cf8);
+            transform: rotateY(180deg);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Match animation Pulse */
+        @keyframes pulse-match {
+            0% { transform: rotateY(180deg) scale(1); }
+            50% { transform: rotateY(180deg) scale(1.1); }
+            100% { transform: rotateY(180deg) scale(1); }
+        }
+
+        .card.matched .card-inner {
+            animation: pulse-match 0.4s ease-in-out;
+        }
+
+        /* Glassmorphism containers */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="text-slate-100 flex flex-col justify-between items-center p-4 md:p-6 min-h-screen">
+
+    <!-- Header Section -->
+    <header class="w-full max-w-2xl text-center mb-4">
+        <h1 class="text-3xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-indigo-300 to-pink-400 tracking-wide mb-2">
+            🧠 Memory Card Game
+        </h1>
+        <p class="text-slate-400 text-sm md:text-base">ทดสอบความจำโดยการเปิดจับคู่การ์ดที่เหมือนกัน!</p>
+    </header>
+
+    <!-- Stats Panel -->
+    <div class="w-full max-w-2xl glass-panel rounded-2xl p-4 mb-6 shadow-xl flex justify-between items-center px-6 md:px-10">
+        <!-- Moves -->
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-hand-pointer"></i>
+            </div>
+            <div>
+                <div class="text-xs text-slate-400 font-semibold uppercase">จำนวนครั้ง (Moves)</div>
+                <div id="moves-count" class="text-xl md:text-2xl font-bold text-slate-100">0</div>
+            </div>
+        </div>
+
+        <!-- Timer -->
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-stopwatch"></i>
+            </div>
+            <div>
+                <div class="text-xs text-slate-400 font-semibold uppercase">เวลา (Time)</div>
+                <div id="timer" class="text-xl md:text-2xl font-bold text-slate-100">00:00</div>
+            </div>
+        </div>
+
+        <!-- Mute Sound Button -->
+        <button id="sound-btn" class="w-10 h-10 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition active:scale-95">
+            <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+        </button>
+    </div>
+
+    <!-- Game Board -->
+    <main class="w-full max-w-2xl aspect-square max-h-[500px] flex-grow grid grid-cols-4 gap-3 md:gap-4 p-2">
+        <!-- 16 Cards will be dynamically injected here -->
+    </main>
+
+    <!-- Bottom Controls -->
+    <footer class="w-full max-w-2xl flex justify-center mt-6">
+        <button id="restart-btn" class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-full shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95 text-lg">
+            <i class="fa-solid fa-rotate-right"></i> เริ่มเกมใหม่
+        </button>
+    </footer>
+
+    <!-- Win Modal -->
+    <div id="win-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="glass-panel bg-slate-900/90 border border-indigo-500/30 rounded-3xl p-6 md:p-8 text-center max-w-md w-full shadow-2xl transform scale-90 transition-transform duration-300" id="modal-content">
+            <div class="w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 border border-emerald-500/30">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-white mb-2">ยินดีด้วย! คุณชนะแล้ว! 🎉</h2>
+            <p class="text-slate-400 text-sm mb-6">คุณจับคู่การ์ดครบทั้งหมดเรียบร้อยแล้ว</p>
+            
+            <div class="bg-slate-800/60 rounded-2xl p-4 flex justify-around mb-6 border border-slate-700/50">
+                <div>
+                    <span class="block text-xs text-slate-400 mb-1">เวลาที่ใช้</span>
+                    <span id="final-time" class="text-xl font-bold text-cyan-400">00:00</span>
+                </div>
+                <div class="w-px bg-slate-700"></div>
+                <div>
+                    <span class="block text-xs text-slate-400 mb-1">เปิดการ์ดทั้งหมด</span>
+                    <span id="final-moves" class="text-xl font-bold text-indigo-400">0 ครั้ง</span>
+                </div>
+            </div>
+
+            <button id="modal-play-again" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg shadow-emerald-500/30 transition-all transform active:scale-95 text-lg">
+                เล่นอีกครั้ง <i class="fa-solid fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Sound System (Synthesized Web Audio API) ---
+        class SoundSystem {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.1) {
+                if (this.muted) return;
+                this.init();
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    
+                    gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch (e) {}
+            }
+
+            playFlip() {
+                this.playTone(400, 'sine', 0.08, 0.08);
+            }
+
+            playMatch() {
+                if (this.muted) return;
+                this.init();
+                setTimeout(() => this.playTone(523.25, 'triangle', 0.12, 0.15), 0); // C5
+                setTimeout(() => this.playTone(659.25, 'triangle', 0.12, 0.15), 100); // E5
+                setTimeout(() => this.playTone(783.99, 'triangle', 0.25, 0.15), 200); // G5
+            }
+
+            playMismatch() {
+                if (this.muted) return;
+                this.init();
+                setTimeout(() => this.playTone(220, 'sawtooth', 0.15, 0.08), 0);
+                setTimeout(() => this.playTone(180, 'sawtooth', 0.2, 0.08), 120);
+            }
+
+            playWin() {
+                if (this.muted) return;
+                this.init();
+                const notes = [440, 554.37, 659.25, 880];
+                notes.forEach((freq, idx) => {
+                    setTimeout(() => this.playTone(freq, 'triangle', 0.3, 0.2), idx * 120);
+                });
+            }
+        }
+
+        const sound = new SoundSystem();
+
+        // --- Game Setup Data ---
+        const icons = [
+            'fa-rocket', 'fa-ghost', 'fa-gamepad', 'fa-crown',
+            'fa-bolt', 'fa-gem', 'fa-heart', 'fa-fire'
+        ];
+
+        let cardsData = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        let timerInterval = null;
+        let secondsElapsed = 0;
+        let gameStarted = false;
+        let isProcessing = false;
+
+        // DOM Elements
+        const board = document.querySelector('main');
+        const movesEl = document.getElementById('moves-count');
+        const timerEl = document.getElementById('timer');
+        const restartBtn = document.getElementById('restart-btn');
+        const soundBtn = document.getElementById('sound-btn');
+        const soundIcon = document.getElementById('sound-icon');
+        const winModal = document.getElementById('win-modal');
+        const modalContent = document.getElementById('modal-content');
+        const finalTimeEl = document.getElementById('final-time');
+        const finalMovesEl = document.getElementById('final-moves');
+        const modalPlayAgain = document.getElementById('modal-play-again');
+
+        // --- Shuffle Function ---
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // --- Timer Controls ---
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            secondsElapsed = 0;
+            timerEl.textContent = "00:00";
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                const mins = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+                const secs = (secondsElapsed % 60).toString().padStart(2, '0');
+                timerEl.textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        // --- Initialize / Reset Game ---
+        function initGame() {
+            // Reset States
+            stopTimer();
+            timerEl.textContent = "00:00";
+            moves = 0;
+            matchedPairs = 0;
+            gameStarted = false;
+            isProcessing = false;
+            flippedCards = [];
+            movesEl.textContent = moves;
+
+            // Hide Modal
+            winModal.classList.add('hidden');
+            winModal.classList.remove('opacity-100');
+            modalContent.classList.remove('scale-100');
+
+            // Duplicate & Shuffle Cards (8 pairs = 16 cards)
+            cardsData = shuffle([...icons, ...icons]);
+
+            // Render Board
+            board.innerHTML = '';
+            cardsData.forEach((iconClass, index) => {
+                const card = document.createElement('div');
+                card.className = 'card perspective-1000 cursor-pointer w-full h-full';
+                card.dataset.icon = iconClass;
+                card.dataset.index = index;
+
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-front hover:border-indigo-400 transition-colors">
+                            <i class="fa-solid fa-brain text-2xl md:text-3xl text-slate-500"></i>
+                        </div>
+                        <div class="card-back">
+                            <i class="fa-solid ${iconClass} text-3xl md:text-4xl text-white"></i>
+                        </div>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => handleCardClick(card));
+                board.appendChild(card);
+            });
+        }
+
+        // --- Card Click Logic ---
+        function handleCardClick(card) {
+            // Prevent interaction if processing, already flipped, or matched
+            if (
+                isProcessing || 
+                card.classList.contains('flipped') || 
+                card.classList.contains('matched')
+            ) return;
+
+            // Start timer on first flip
+            if (!gameStarted) {
+                gameStarted = true;
+                startTimer();
+            }
+
+            // Flip Card
+            card.classList.add('flipped');
+            sound.playFlip();
+            flippedCards.push(card);
+
+            // If 2 cards are flipped, check for match
+            if (flippedCards.length === 2) {
+                moves++;
+                movesEl.textContent = moves;
+                checkMatch();
+            }
+        }
+
+        // --- Check Match Logic ---
+        function checkMatch() {
+            isProcessing = true;
+            const [card1, card2] = flippedCards;
+            const match = card1.dataset.icon === card2.dataset.icon;
+
+            if (match) {
+                sound.playMatch();
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                matchedPairs++;
+                flippedCards = [];
+                isProcessing = false;
+
+                // Check Win
+                if (matchedPairs === icons.length) {
+                    stopTimer();
+                    setTimeout(showWinModal, 600);
+                }
+            } else {
+                sound.playMismatch();
+                setTimeout(() => {
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    flippedCards = [];
+                    isProcessing = false;
+                }, 800);
+            }
+        }
+
+        // --- Show Win Modal ---
+        function showWinModal() {
+            sound.playWin();
+            finalTimeEl.textContent = timerEl.textContent;
+            finalMovesEl.textContent = `${moves} ครั้ง`;
+            
+            winModal.classList.remove('hidden');
+            setTimeout(() => {
+                winModal.classList.add('opacity-100');
+                modalContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        // --- Event Listeners ---
+        restartBtn.addEventListener('click', initGame);
+        modalPlayAgain.addEventListener('click', initGame);
+
+        soundBtn.addEventListener('click', () => {
+            sound.muted = !sound.muted;
+            soundIcon.className = sound.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('text-rose-400', sound.muted);
+        });
+
+        // --- Start on Load ---
+        window.onload = initGame;
+    </script>
+</body>
+</html>

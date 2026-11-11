@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Reflex - Laser Grid Reaction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d0f18;
+            --panel-bg: rgba(20, 24, 39, 0.7);
+            --primary: #00f0ff;
+            --secondary: #7000ff;
+            --accent: #ff007f;
+            --gold: #ffe600;
+            --danger: #ff0055;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Prompt', 'Orbitron', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 50% 20%, rgba(255, 0, 127, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 240, 255, 0.12) 0%, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            color: var(--primary);
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 240, 255, 0.15);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 520px;
+            background: var(--panel-bg);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 240, 255, 0.05);
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+        }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px 8px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-value.danger { color: var(--danger); }
+        .stat-value.gold { color: var(--gold); }
+
+        .reflex-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .grid-node {
+            aspect-ratio: 1;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            transition: all 0.1s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+        }
+
+        .grid-node::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            opacity: 0;
+            transition: opacity 0.1s ease;
+        }
+
+        /* Target States */
+        .grid-node.target {
+            border-color: var(--primary);
+            box-shadow: 0 0 25px var(--primary), inset 0 0 15px var(--primary);
+            background: rgba(0, 240, 255, 0.2);
+            animation: pulseTarget 0.4s infinite alternate;
+        }
+
+        .grid-node.gold-target {
+            border-color: var(--gold);
+            box-shadow: 0 0 30px var(--gold), inset 0 0 20px var(--gold);
+            background: rgba(255, 230, 0, 0.25);
+            animation: pulseGold 0.3s infinite alternate;
+        }
+
+        .grid-node.trap {
+            border-color: var(--danger);
+            box-shadow: 0 0 25px var(--danger), inset 0 0 15px var(--danger);
+            background: rgba(255, 0, 85, 0.25);
+        }
+
+        @keyframes pulseTarget {
+            from { transform: scale(0.98); }
+            to { transform: scale(1.02); }
+        }
+
+        @keyframes pulseGold {
+            from { transform: scale(0.95); }
+            to { transform: scale(1.05); }
+        }
+
+        .status-msg {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--primary);
+            min-height: 25px;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        .btn-action {
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            color: #fff;
+            border: none;
+            padding: 14px 30px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            border-radius: 10px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.4);
+            text-transform: uppercase;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(255, 0, 127, 0.7);
+        }
+
+        @media (max-width: 480px) {
+            .game-container { padding: 20px 15px; }
+            .back-btn { top: 10px; left: 10px; padding: 6px 12px; font-size: 0.75rem; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        หน้าหลัก
+    </a>
+
+    <div class="game-container">
+        <h1>CYBER REFLEX</h1>
+        <div class="subtitle">กดไฟสีฟ้าให้เร็วที่สุด ห้ามกดไฟแดงระเบิด!</div>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-label">SCORE</span>
+                <span id="score-val" class="stat-value gold">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">TIME LEFT</span>
+                <span id="time-val" class="stat-value">30s</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">REACTION</span>
+                <span id="reaction-val" class="stat-value">-- ms</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">LIVES</span>
+                <span id="lives-val" class="stat-value danger">❤️❤️❤️</span>
+            </div>
+        </div>
+
+        <div class="reflex-grid" id="reflex-grid">
+            <button class="grid-node" data-id="0"></button>
+            <button class="grid-node" data-id="1"></button>
+            <button class="grid-node" data-id="2"></button>
+            <button class="grid-node" data-id="3"></button>
+            <button class="grid-node" data-id="4"></button>
+            <button class="grid-node" data-id="5"></button>
+            <button class="grid-node" data-id="6"></button>
+            <button class="grid-node" data-id="7"></button>
+            <button class="grid-node" data-id="8"></button>
+        </div>
+
+        <div id="status-msg" class="status-msg">พร้อมแล้วกดเริ่มเกมด้านล่าง!</div>
+        <button class="btn-action" id="start-btn">เริ่มทดสอบปฏิกิริยา</button>
+    </div>
+
+    <script>
+        const nodes = document.querySelectorAll('.grid-node');
+        const startBtn = document.getElementById('start-btn');
+        const statusMsg = document.getElementById('status-msg');
+        const scoreVal = document.getElementById('score-val');
+        const timeVal = document.getElementById('time-val');
+        const reactionVal = document.getElementById('reaction-val');
+        const livesVal = document.getElementById('lives-val');
+
+        let score = 0;
+        let timeLeft = 30;
+        let lives = 3;
+        let gameInterval = null;
+        let targetTimeout = null;
+        let isGameRunning = false;
+        
+        let activeNodeIndex = null;
+        let nodeType = null; // 'target', 'gold', 'trap'
+        let spawnTime = 0;
+        let reactionTimes = [];
+
+        // Audio Effects (Web Audio API)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+
+            if (type === 'hit') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(900, now + 0.08);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now); osc.stop(now + 0.08);
+            } else if (type === 'gold') {
+                [523.25, 659.25, 1046.50].forEach((freq, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.frequency.setValueAtTime(freq, now + i * 0.05);
+                    g.gain.setValueAtTime(0.1, now + i * 0.05);
+                    g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.05 + 0.15);
+                    o.start(now + i * 0.05); o.stop(now + i * 0.05 + 0.15);
+                });
+            } else if (type === 'trap' || type === 'miss') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(80, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            }
+        }
+
+        function updateLivesDisplay() {
+            livesVal.textContent = '❤️'.repeat(Math.max(0, lives)) || '💔';
+        }
+
+        function startGame() {
+            score = 0;
+            timeLeft = 30;
+            lives = 3;
+            reactionTimes = [];
+            isGameRunning = true;
+
+            scoreVal.textContent = '0';
+            timeVal.textContent = '30s';
+            reactionVal.textContent = '-- ms';
+            updateLivesDisplay();
+
+            startBtn.style.display = 'none';
+            statusMsg.textContent = 'ลุยเลย! กดเป้าหมายนีออนให้ไวที่สุด';
+
+            clearInterval(gameInterval);
+            clearTimeout(targetTimeout);
+
+            gameInterval = setInterval(() => {
+                timeLeft--;
+                timeVal.textContent = `${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    endGame('หมดเวลาการแข่งขัน!');
+                }
+            }, 1000);
+
+            spawnTarget();
+        }
+
+        function clearGrid() {
+            nodes.forEach(node => {
+                node.className = 'grid-node';
+                node.textContent = '';
+            });
+            activeNodeIndex = null;
+            nodeType = null;
+        }
+
+        function spawnTarget() {
+            if (!isGameRunning) return;
+
+            clearGrid();
+
+            // Random delay between targets
+            const delay = Math.floor(Math.random() * 400) + 200;
+
+            targetTimeout = setTimeout(() => {
+                if (!isGameRunning) return;
+
+                const randomIndex = Math.floor(Math.random() * nodes.length);
+                activeNodeIndex = randomIndex;
+                const node = nodes[randomIndex];
+
+                // Determine target type (70% Target, 15% Gold, 15% Trap)
+                const randType = Math.random();
+                if (randType < 0.70) {
+                    nodeType = 'target';
+                    node.classList.add('target');
+                    node.textContent = '⚡';
+                } else if (randType < 0.85) {
+                    nodeType = 'gold';
+                    node.classList.add('gold-target');
+                    node.textContent = '💎';
+                } else {
+                    nodeType = 'trap';
+                    node.classList.add('trap');
+                    node.textContent = '💣';
+                }
+
+                spawnTime = Date.now();
+
+                // Target expires if not clicked
+                const expireTime = Math.max(600, 1200 - (score * 5));
+                targetTimeout = setTimeout(() => {
+                    if (isGameRunning && activeNodeIndex === randomIndex) {
+                        if (nodeType === 'target' || nodeType === 'gold') {
+                            // Missed valid target
+                            playSound('miss');
+                            lives--;
+                            updateLivesDisplay();
+                            if (lives <= 0) endGame('เสียชีวิตทั้งหมด!');
+                            else spawnTarget();
+                        } else {
+                            // Trap naturally expired, spawn next
+                            spawnTarget();
+                        }
+                    }
+                }, expireTime);
+
+            }, delay);
+        }
+
+        nodes.forEach(node => {
+            node.addEventListener('pointerdown', () => {
+                if (!isGameRunning || activeNodeIndex === null) return;
+
+                const clickedIndex = parseInt(node.dataset.id);
+                if (clickedIndex === activeNodeIndex) {
+                    const reactionTime = Date.now() - spawnTime;
+                    clearTimeout(targetTimeout);
+
+                    if (nodeType === 'target') {
+                        playSound('hit');
+                        const points = Math.max(10, Math.floor(10000 / reactionTime));
+                        score += points;
+                        reactionTimes.push(reactionTime);
+                        updateStats(reactionTime);
+                    } else if (nodeType === 'gold') {
+                        playSound('gold');
+                        score += 300;
+                        reactionTimes.push(reactionTime);
+                        updateStats(reactionTime);
+                    } else if (nodeType === 'trap') {
+                        playSound('trap');
+                        lives--;
+                        score = Math.max(0, score - 150);
+                        scoreVal.textContent = score;
+                        updateLivesDisplay();
+                        if (lives <= 0) {
+                            endGame('โดนกับดักระเบิด!');
+                            return;
+                        }
+                    }
+
+                    spawnTarget();
+                } else {
+                    // Clicked wrong empty node
+                    playSound('miss');
+                    lives--;
+                    updateLivesDisplay();
+                    if (lives <= 0) endGame('กดพลาดเกินกำหนด!');
+                }
+            });
+        });
+
+        function updateStats(lastReaction) {
+            scoreVal.textContent = score;
+            const avgReaction = Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length);
+            reactionVal.textContent = `${avgReaction} ms`;
+        }
+
+        function endGame(reason) {
+            isGameRunning = false;
+            clearInterval(gameInterval);
+            clearTimeout(targetTimeout);
+            clearGrid();
+
+            statusMsg.textContent = `${reason} คะแนนสุดท้าย: ${score}`;
+            startBtn.textContent = 'ทดสอบอีกครั้ง';
+            startBtn.style.display = 'block';
+
+            // Save High Score for logged in user
+            const currentUser = JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' };
+            const bestScores = JSON.parse(localStorage.getItem('arcade_reflex_scores') || '{}');
+            const userBest = bestScores[currentUser.username] || 0;
+
+            if (score > userBest) {
+                bestScores[currentUser.username] = score;
+                localStorage.setItem('arcade_reflex_scores', JSON.stringify(bestScores));
+                statusMsg.textContent += ' 🎉 New High Score!';
+            }
+        }
+
+        startBtn.addEventListener('click', startGame);
+    </script>
+</body>
+</html>

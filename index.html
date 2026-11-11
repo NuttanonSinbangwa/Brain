@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Arcade Hub - ศูนย์รวมเกมฝึกสมอง</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        @import "tailwindcss";
+        body {
+            font-family: 'Kanit', 'Rajdhani', sans-serif;
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        /* Interactive Cyberpunk Game Cards */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .glass-card:hover::before {
+            left: 100%;
+        }
+
+        .glass-card-memory:hover {
+            border-color: rgba(99, 102, 241, 0.6);
+            transform: translateY(-6px);
+            box-shadow: 0 16px 32px -4px rgba(99, 102, 241, 0.3);
+        }
+
+        .glass-card-pattern:hover {
+            border-color: rgba(6, 182, 212, 0.6);
+            transform: translateY(-6px);
+            box-shadow: 0 16px 32px -4px rgba(6, 182, 212, 0.3);
+        }
+
+        /* Neon Glow Badges */
+        .glow-indigo {
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+        }
+
+        /* Custom Input Styles */
+        .cyber-input {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #f8fafc;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+        .cyber-input:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 12px rgba(129, 140, 248, 0.3);
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between items-center p-4 md:p-8 min-h-screen">
+
+    <!-- Background Grid Lines -->
+    <div class="fixed inset-0 bg-[linear-gradient(to_right,#1f293710_1px,transparent_1px),linear-gradient(to_bottom,#1f293710_1px,transparent_1px)] bg-size-[4rem_4rem] pointer-events-none"></div>
+
+    <!-- Navigation Header -->
+    <nav class="w-full max-w-5xl glass-panel rounded-2xl px-6 py-4 mb-6 flex justify-between items-center z-10">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to from-indigo-500/30 to-purple-500/30 text-indigo-400 border border-indigo-500/40 flex items-center justify-center text-xl glow-indigo">
+                <i class="fa-solid fa-gamepad"></i>
+            </div>
+            <div>
+                <span class="font-orbitron font-extrabold text-lg md:text-xl tracking-wider text-white">BRAIN ARCADE</span>
+                <span class="hidden md:inline-block text-xs text-slate-400 ml-2 border-l border-slate-700 pl-2">HUB PORTAL</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <!-- User Status / Account Action Button -->
+            <div id="user-bar" class="flex items-center gap-2">
+                <!-- Injected via JS when logged in or out -->
+            </div>
+
+            <!-- Sound Button -->
+            <button id="sound-toggle-btn" class="w-10 h-10 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition border border-slate-700 active:scale-95">
+                <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="w-full max-w-5xl grow flex flex-col justify-center items-center my-4 z-10">
+        
+        <!-- Dashboard Title -->
+        <div class="text-center mb-10 md:mb-14">
+            <h1 class="text-4xl md:text-6xl font-black font-orbitron bg-clip-text text-transparent bg-linear-to-r from-cyan-400 via-indigo-300 to-fuchsia-400 tracking-wider mb-3 drop-shadow-sm">
+                ARCADE GAME HUB
+            </h1>
+            <p class="text-slate-400 text-base md:text-lg max-w-xl mx-auto font-light">
+                เข้าสู่ระบบ เลือกระบุชื่อที่ใช้ในเกม แล้วไปปลดล็อกสถิติสูงสุดของคุณกันเลย!
+            </p>
+        </div>
+
+        <!-- 2 Game Selection Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full px-2">
+            
+            <!-- Game 1 Card: Memory Cards -->
+            <div class="glass-card glass-card-memory rounded-3xl p-6 md:p-8 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-5">
+                        <div class="w-16 h-16 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-3xl glow-indigo">
+                            <i class="fa-solid fa-brain"></i>
+                        </div>
+                        <span class="px-3.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
+                            ความจำระยะสั้น
+                        </span>
+                    </div>
+
+                    <h2 class="text-2xl md:text-3xl font-bold text-white mb-3">Memory Cards</h2>
+                    <p class="text-slate-400 text-sm md:text-base mb-6 leading-relaxed">
+                        เปิดการ์ดและจับคู่ภาพสัญลักษณ์ที่เหมือนกัน ท้าทายสมาธิโดยใช้เวลาและจำนวนครั้งให้น้อยที่สุด
+                    </p>
+                </div>
+
+                <div>
+                    <!-- Stats Preview -->
+                    <div class="bg-slate-900/70 rounded-2xl p-3.5 mb-5 flex justify-between items-center text-xs md:text-sm text-slate-300 border border-slate-800">
+                        <span class="flex items-center gap-2">
+                            <i class="fa-solid fa-trophy text-amber-400"></i> เวลาดีที่สุด:
+                        </span>
+                        <span id="best-memory-time" class="font-mono text-cyan-400 font-bold text-base">--:--</span>
+                    </div>
+
+                    <!-- Navigation Link to Game 1 -->
+                    <a href="memory.html" onclick="playClickSound()" class="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-indigo-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-3 text-base font-orbitron tracking-wider">
+                        <i class="fa-solid fa-play"></i> เล่นเกมนี้
+                    </a>
+                </div>
+            </div>
+
+            <!-- Game 2 Card: Pattern Recall -->
+            <div class="glass-card glass-card-pattern rounded-3xl p-6 md:p-8 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-5">
+                        <div class="w-16 h-16 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center text-3xl glow-cyan">
+                            <i class="fa-solid fa-grip"></i>
+                        </div>
+                        <span class="px-3.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                            ความจำลำดับภาพ
+                        </span>
+                    </div>
+
+                    <h2 class="text-2xl md:text-3xl font-bold text-white mb-3">Pattern Recall</h2>
+                    <p class="text-slate-400 text-sm md:text-base mb-6 leading-relaxed">
+                        จำลำดับการส่องแสงของนีออนเจมบนกริด แล้วกดตามให้ถูกต้อง! ลำดับจะถูกสุ่มใหม่หมดในทุกด่าน
+                    </p>
+                </div>
+
+                <div>
+                    <!-- Stats Preview -->
+                    <div class="bg-slate-900/70 rounded-2xl p-3.5 mb-5 flex justify-between items-center text-xs md:text-sm text-slate-300 border border-slate-800">
+                        <span class="flex items-center gap-2">
+                            <i class="fa-solid fa-fire text-amber-400"></i> ด่านสูงสุด:
+                        </span>
+                        <span id="best-pattern-level" class="font-mono text-fuchsia-400 font-bold text-base">0</span>
+                    </div>
+
+                    <!-- Navigation Link to Game 2 -->
+                    <a href="pattern.html" onclick="playClickSound()" class="w-full bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-cyan-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-3 text-base font-orbitron tracking-wider">
+                        <i class="fa-solid fa-play"></i> เล่นเกมนี้
+                    </a>
+                </div>
+            </div>
+
+            <!-- Game 1 Card: Memory Cards -->
+            <div class="glass-card glass-card-memory rounded-3xl p-6 md:p-8 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-5">
+                        <div class="w-16 h-16 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-3xl glow-indigo">
+                            <i class="fa-solid fa-brain"></i>
+                        </div>
+                        <span class="px-3.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
+                            ความจำระยะสั้น
+                        </span>
+                    </div>
+
+                    <h2 class="text-2xl md:text-3xl font-bold text-white mb-3">Memory Cards</h2>
+                    <p class="text-slate-400 text-sm md:text-base mb-6 leading-relaxed">
+                        เปิดการ์ดและจับคู่ภาพสัญลักษณ์ที่เหมือนกัน ท้าทายสมาธิโดยใช้เวลาและจำนวนครั้งให้น้อยที่สุด
+                    </p>
+                </div>
+
+                <div>
+                    <!-- Stats Preview -->
+                    <div class="bg-slate-900/70 rounded-2xl p-3.5 mb-5 flex justify-between items-center text-xs md:text-sm text-slate-300 border border-slate-800">
+                        <span class="flex items-center gap-2">
+                            <i class="fa-solid fa-trophy text-amber-400"></i> เวลาดีที่สุด:
+                        </span>
+                        <span id="best-memory-time" class="font-mono text-cyan-400 font-bold text-base">--:--</span>
+                    </div>
+
+                    <!-- Navigation Link to Game 1 -->
+                    <a href="cyber_reflex.html" onclick="playClickSound()" class="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-indigo-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-3 text-base font-orbitron tracking-wider">
+                        <i class="fa-solid fa-play"></i> เล่นเกมนี้
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- AUTH MODAL (LOGIN / REGISTER) -->
+    <div id="auth-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="glass-panel bg-slate-900/90 border border-indigo-500/30 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl relative">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <!-- Tabs Header -->
+            <div class="flex border-b border-slate-800 mb-6">
+                <button id="tab-login" onclick="switchAuthTab('login')" class="w-1/2 py-2 text-center font-bold text-indigo-400 border-b-2 border-indigo-500 transition">เข้าสู่ระบบ</button>
+                <button id="tab-register" onclick="switchAuthTab('register')" class="w-1/2 py-2 text-center font-bold text-slate-400 border-b-2 border-transparent transition">สมัครสมาชิก</button>
+            </div>
+
+            <!-- Alert Box -->
+            <div id="auth-alert" class="hidden mb-4 p-3 rounded-xl text-xs font-semibold"></div>
+
+            <!-- Login / Register Form -->
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Username</label>
+                    <input type="text" id="auth-username" required class="cyber-input w-full px-4 py-3 rounded-xl text-sm" placeholder="กรอกชื่อผู้ใช้">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Password</label>
+                    <input type="password" id="auth-password" required class="cyber-input w-full px-4 py-3 rounded-xl text-sm" placeholder="กรอกรหัสผ่าน">
+                </div>
+
+                <!-- Confirm Password (Register only) -->
+                <div id="confirm-password-group" class="hidden">
+                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">ยืนยันรหัสผ่าน (Confirm Password)</label>
+                    <input type="password" id="auth-confirm-password" class="cyber-input w-full px-4 py-3 rounded-xl text-sm" placeholder="กรอกรหัสผ่านอีกครั้ง">
+                </div>
+
+                <!-- Display Name (Register only) -->
+                <div id="display-name-group" class="hidden">
+                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">ชื่อที่แสดงในเกม (Display Name)</label>
+                    <input type="text" id="auth-displayname" class="cyber-input w-full px-4 py-3 rounded-xl text-sm" placeholder="เช่น CyberPlayer99">
+                </div>
+
+                <button type="submit" id="auth-submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-indigo-500/25 text-sm mt-2">
+                    เข้าสู่ระบบ
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PROFILE MODAL (EDIT DISPLAY NAME) -->
+    <div id="profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="glass-panel bg-slate-900/90 border border-cyan-500/30 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl relative">
+            <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-user-gear text-cyan-400"></i> จัดการโปรไฟล์ผู้ใช้
+            </h3>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Username (เปลี่ยนไม่ได้)</label>
+                    <input type="text" id="profile-username" disabled class="cyber-input w-full px-4 py-3 rounded-xl text-sm opacity-60 cursor-not-allowed">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">ชื่อที่ใช้ในเกม (Display Name)</label>
+                    <input type="text" id="profile-displayname" class="cyber-input w-full px-4 py-3 rounded-xl text-sm">
+                </div>
+
+                <button onclick="saveProfile()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-cyan-500/25 text-sm">
+                    บันทึกข้อมูล
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Guide -->
+    <footer class="w-full max-w-5xl text-center text-xs text-slate-500 py-4 z-10 border-t border-slate-800/60 mt-6">
+        <p>Bboss</p>
+    </footer>
+
+    <script>
+        // --- Synthesized Sound Effect ---
+        let soundMuted = false;
+        
+        function playClickSound() {
+            if (soundMuted) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.12);
+            } catch(e) {}
+        }
+
+        const soundBtn = document.getElementById('sound-toggle-btn');
+        const soundIcon = document.getElementById('sound-icon');
+        
+        soundBtn.addEventListener('click', () => {
+            soundMuted = !soundMuted;
+            soundIcon.className = soundMuted ? 'fa-solid fa-volume-xmark text-rose-400' : 'fa-solid fa-volume-high';
+        });
+
+        // --- AUTHENTICATION & USER SYSTEM ---
+        let currentAuthMode = 'login'; // 'login' or 'register'
+        let currentUser = JSON.parse(localStorage.getItem('arcade_current_user')) || null;
+
+        function getUsersDB() {
+            return JSON.parse(localStorage.getItem('arcade_users_db')) || {};
+        }
+
+        function saveUsersDB(db) {
+            localStorage.setItem('arcade_users_db', JSON.stringify(db));
+        }
+
+        function renderUserBar() {
+            const userBar = document.getElementById('user-bar');
+            if (currentUser) {
+                userBar.innerHTML = `
+                    <button onclick="openProfileModal()" class="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold border border-indigo-500/30 transition">
+                        <i class="fa-solid fa-circle-user text-indigo-400 text-sm"></i>
+                        <span>${currentUser.displayName || currentUser.username}</span>
+                    </button>
+                    <button onclick="logout()" class="w-9 h-9 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center transition active:scale-95" title="ออกจากระบบ">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                `;
+            } else {
+                userBar.innerHTML = `
+                    <button onclick="openAuthModal('login')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-md shadow-indigo-500/20">
+                        <i class="fa-solid fa-user mr-1"></i> เข้าสู่ระบบ / สมัครสมาชิก
+                    </button>
+                `;
+            }
+            loadHighScores();
+        }
+
+        function openAuthModal(mode = 'login') {
+            switchAuthTab(mode);
+            document.getElementById('auth-modal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-modal').classList.add('hidden');
+        }
+
+        function switchAuthTab(mode) {
+            currentAuthMode = mode;
+            const tabLogin = document.getElementById('tab-login');
+            const tabRegister = document.getElementById('tab-register');
+            const confirmPasswordGroup = document.getElementById('confirm-password-group');
+            const displayNameGroup = document.getElementById('display-name-group');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            const alertBox = document.getElementById('auth-alert');
+            
+            alertBox.classList.add('hidden');
+
+            if (mode === 'login') {
+                tabLogin.className = "w-1/2 py-2 text-center font-bold text-indigo-400 border-b-2 border-indigo-500 transition";
+                tabRegister.className = "w-1/2 py-2 text-center font-bold text-slate-400 border-b-2 border-transparent transition";
+                confirmPasswordGroup.classList.add('hidden');
+                displayNameGroup.classList.add('hidden');
+                submitBtn.textContent = 'เข้าสู่ระบบ';
+            } else {
+                tabRegister.className = "w-1/2 py-2 text-center font-bold text-indigo-400 border-b-2 border-indigo-500 transition";
+                tabLogin.className = "w-1/2 py-2 text-center font-bold text-slate-400 border-b-2 border-transparent transition";
+                confirmPasswordGroup.classList.remove('hidden');
+                displayNameGroup.classList.remove('hidden');
+                submitBtn.textContent = 'สมัครสมาชิก';
+            }
+        }
+
+        function handleAuthSubmit(e) {
+            e.preventDefault();
+            const username = document.getElementById('auth-username').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
+            const confirmPassword = document.getElementById('auth-confirm-password').value.trim();
+            const displayName = document.getElementById('auth-displayname').value.trim();
+            const alertBox = document.getElementById('auth-alert');
+
+            if (!username || !password) return;
+
+            const db = getUsersDB();
+
+            if (currentAuthMode === 'register') {
+                if (password !== confirmPassword) {
+                    alertBox.className = "mb-4 p-3 rounded-xl text-xs font-semibold bg-rose-500/20 border border-rose-500/40 text-rose-300";
+                    alertBox.textContent = "รหัสผ่านทั้งสองช่องไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง";
+                    alertBox.classList.remove('hidden');
+                    return;
+                }
+
+                if (db[username]) {
+                    alertBox.className = "mb-4 p-3 rounded-xl text-xs font-semibold bg-rose-500/20 border border-rose-500/40 text-rose-300";
+                    alertBox.textContent = "ชื่อผู้ใช้นี้มีในระบบแล้ว กรุณาใช้ชื่ออื่น";
+                    alertBox.classList.remove('hidden');
+                    return;
+                }
+
+                db[username] = {
+                    username: username,
+                    password: password,
+                    displayName: displayName || username,
+                    scores: { memory: null, pattern: 0 }
+                };
+
+                saveUsersDB(db);
+                currentUser = db[username];
+                localStorage.setItem('arcade_current_user', JSON.stringify(currentUser));
+                closeAuthModal();
+                renderUserBar();
+
+            } else { // Login
+                if (!db[username] || db[username].password !== password) {
+                    alertBox.className = "mb-4 p-3 rounded-xl text-xs font-semibold bg-rose-500/20 border border-rose-500/40 text-rose-300";
+                    alertBox.textContent = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
+                    alertBox.classList.remove('hidden');
+                    return;
+                }
+
+                currentUser = db[username];
+                localStorage.setItem('arcade_current_user', JSON.stringify(currentUser));
+                closeAuthModal();
+                renderUserBar();
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('arcade_current_user');
+            renderUserBar();
+        }
+
+        function openProfileModal() {
+            if (!currentUser) return;
+            document.getElementById('profile-username').value = currentUser.username;
+            document.getElementById('profile-displayname').value = currentUser.displayName || currentUser.username;
+            document.getElementById('profile-modal').classList.remove('hidden');
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profile-modal').classList.add('hidden');
+        }
+
+        function saveProfile() {
+            if (!currentUser) return;
+            const newDisplayName = document.getElementById('profile-displayname').value.trim();
+            if (!newDisplayName) return;
+
+            currentUser.displayName = newDisplayName;
+            localStorage.setItem('arcade_current_user', JSON.stringify(currentUser));
+
+            const db = getUsersDB();
+            if (db[currentUser.username]) {
+                db[currentUser.username].displayName = newDisplayName;
+                saveUsersDB(db);
+            }
+
+            closeProfileModal();
+            renderUserBar();
+        }
+
+        // Load High Scores from localStorage
+        function loadHighScores() {
+            if (currentUser) {
+                const db = getUsersDB();
+                const userRecord = db[currentUser.username];
+                if (userRecord && userRecord.scores) {
+                    document.getElementById('best-memory-time').textContent = userRecord.scores.memory || '--:--';
+                    document.getElementById('best-pattern-level').textContent = userRecord.scores.pattern || '0';
+                    return;
+                }
+            }
+
+            const memoryTime = localStorage.getItem('hub_best_memory_time');
+            document.getElementById('best-memory-time').textContent = memoryTime || '--:--';
+
+            const patternLevel = localStorage.getItem('pattern_recall_high_score');
+            document.getElementById('best-pattern-level').textContent = patternLevel || '0';
+        }
+
+        window.onload = () => {
+            renderUserBar();
+        };
+    </script>
+</body>
+</html>
