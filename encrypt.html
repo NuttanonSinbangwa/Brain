@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Cipher - Time-Attack Brute Force</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #06080f;
+            --terminal-bg: rgba(10, 16, 28, 0.9);
+            --primary: #00ff66;
+            --primary-dim: rgba(0, 255, 102, 0.3);
+            --accent: #00e5ff;
+            --warning: #ffb700;
+            --danger: #ff0055;
+            --text-main: #c0ffd0;
+            --text-muted: #4a755a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Share Tech Mono', 'Orbitron', monospace;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(rgba(0, 255, 102, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 102, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 255, 102, 0.05);
+            border: 1px solid rgba(0, 255, 102, 0.3);
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 255, 102, 0.15);
+            box-shadow: 0 0 12px var(--primary-dim);
+            transform: translateY(-2px);
+        }
+
+        .terminal-window {
+            width: 100%;
+            max-width: 650px;
+            background: var(--terminal-bg);
+            border: 1px solid var(--primary);
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 255, 102, 0.15), inset 0 0 20px rgba(0, 255, 102, 0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .terminal-header {
+            background: rgba(0, 255, 102, 0.1);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--primary-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--primary-dim);
+        }
+        .dot:nth-child(1) { background: var(--danger); }
+        .dot:nth-child(2) { background: var(--warning); }
+        .dot:nth-child(3) { background: var(--primary); }
+
+        .terminal-body {
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .top-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 255, 102, 0.2);
+            padding: 12px 15px;
+            border-radius: 8px;
+        }
+
+        .stat-item {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+        }
+        .stat-value {
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .stat-value.timer {
+            color: var(--warning);
+        }
+
+        /* Temporary Notification Popup (10s disappear) */
+        .feedback-banner {
+            background: rgba(0, 255, 102, 0.1);
+            border: 1px solid var(--primary);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            min-height: 55px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+        .feedback-banner.error {
+            background: rgba(255, 0, 85, 0.1);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        .feedback-banner.success {
+            background: rgba(0, 255, 102, 0.2);
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        /* Input Slots */
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 102, 0.15);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .slots-container {
+            display: flex;
+            gap: 12px;
+        }
+
+        .code-slot {
+            width: 55px;
+            height: 65px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid var(--primary-dim);
+            border-radius: 8px;
+            font-size: 2rem;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Numpad */
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .num-btn {
+            background: rgba(0, 255, 102, 0.05);
+            border: 1px solid var(--primary-dim);
+            color: var(--primary);
+            padding: 10px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .num-btn:hover {
+            background: var(--primary);
+            color: var(--bg-color);
+            box-shadow: 0 0 10px var(--primary-dim);
+        }
+
+        .action-row {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 350px;
+            margin-top: 5px;
+        }
+
+        .btn-action {
+            flex: 1;
+            background: rgba(0, 255, 102, 0.15);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 10px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .btn-action:hover {
+            background: var(--primary);
+            color: var(--bg-color);
+            box-shadow: 0 0 15px var(--primary-dim);
+        }
+        .btn-action.submit {
+            background: var(--primary);
+            color: var(--bg-color);
+        }
+
+        .footer-info {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 8px;
+            background: rgba(0,0,0,0.2);
+            border-top: 1px solid rgba(0,255,102,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        หน้าหลัก
+    </a>
+
+    <div class="terminal-window">
+        <div class="terminal-header">
+            <span>BRUTE-FORCE OVERRIDE v3.0 // 5-MIN TIME ATTACK</span>
+            <div class="terminal-dots">
+                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            </div>
+        </div>
+
+        <div class="terminal-body">
+            <!-- Stats -->
+            <div class="top-stats">
+                <div class="stat-item">เวลาที่เหลือ: <span id="timer-display" class="stat-value timer">05:00</span></div>
+                <div class="stat-item">จำนวนครั้งที่ลอง: <span id="attempts-display" class="stat-value">0</span></div>
+            </div>
+
+            <!-- Feedback Banner (Disappears after 10s) -->
+            <div class="feedback-banner" id="feedback-banner">
+                <span>ระบบพร้อมใช้งาน กรุณากรอกรหัส 4 หลักเพื่อเริ่มต้นแฮก</span>
+            </div>
+
+            <!-- Input Section -->
+            <div class="input-section">
+                <div class="slots-container">
+                    <div class="code-slot" id="slot-0">-</div>
+                    <div class="code-slot" id="slot-1">-</div>
+                    <div class="code-slot" id="slot-2">-</div>
+                    <div class="code-slot" id="slot-3">-</div>
+                </div>
+
+                <!-- Numpad -->
+                <div class="numpad">
+                    <button class="num-btn" onclick="inputDigit(1)">1</button>
+                    <button class="num-btn" onclick="inputDigit(2)">2</button>
+                    <button class="num-btn" onclick="inputDigit(3)">3</button>
+                    <button class="num-btn" onclick="inputDigit(4)">4</button>
+                    <button class="num-btn" onclick="inputDigit(5)">5</button>
+                    <button class="num-btn" onclick="inputDigit(6)">6</button>
+                    <button class="num-btn" onclick="inputDigit(7)">7</button>
+                    <button class="num-btn" onclick="inputDigit(8)">8</button>
+                    <button class="num-btn" onclick="inputDigit(9)">9</button>
+                    <button class="num-btn" onclick="inputDigit(0)">0</button>
+                </div>
+
+                <div class="action-row">
+                    <button class="btn-action" onclick="clearInput()">ล้างค่า</button>
+                    <button class="btn-action submit" onclick="submitCode()">ยืนยันเจาะรหัส</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-info" id="footer-status">สถานะ: กำลังจับเวลาถอยหลัง 5 นาที</div>
+    </div>
+
+    <script>
+        let secretCode = [];
+        let currentInput = ['', '', '', ''];
+        let attemptCount = 0;
+        let timeLeft = 300; // 5 นาที (300 วินาที)
+        let timerInterval = null;
+        let feedbackTimeout = null;
+        let isGameOver = false;
+
+        const timerDisplay = document.getElementById('timer-display');
+        const attemptsDisplay = document.getElementById('attempts-display');
+        const feedbackBanner = document.getElementById('feedback-banner');
+        const footerStatus = document.getElementById('footer-status');
+
+        let audioCtx = null;
+        function playSound(type) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                    osc.start(now); osc.stop(now + 0.04);
+                } else if (type === 'correct') {
+                    [523, 659, 784, 1046].forEach((f, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g); g.connect(audioCtx.destination);
+                        o.frequency.setValueAtTime(f, now + i * 0.08);
+                        g.gain.setValueAtTime(0.1, now + i * 0.08);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.1);
+                        o.start(now + i * 0.08); o.stop(now + i * 0.08 + 0.1);
+                    });
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(80, now + 0.2);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.start(now); osc.stop(now + 0.2);
+                }
+            } catch (e) {}
+        }
+
+        function initGame() {
+            isGameOver = false;
+            attemptCount = 0;
+            timeLeft = 300;
+            currentInput = ['', '', '', ''];
+            attemptsDisplay.textContent = '0';
+            footerStatus.textContent = "สถานะ: กำลังจับเวลาถอยหลัง 5 นาที";
+            
+            // สุ่มรหัสลับ 4 หลัก (0-9 ไม่ซ้ำกัน)
+            let digits = [0,1,2,3,4,5,6,7,8,9].sort(() => 0.5 - Math.random());
+            secretCode = digits.slice(0, 4);
+
+            updateSlotsUI();
+            startTimer();
+            showFeedback("ระบบพร้อม! กรอกรหัสเพื่อเริ่มเจาะระบบ Brute-Force", "normal");
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (isGameOver) return;
+                timeLeft--;
+                let mins = Math.floor(timeLeft / 60);
+                let secs = timeLeft % 60;
+                timerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+                if (timeLeft <= 0) {
+                    endGame(false, "หมดเวลา! ระบบล็อกดาวน์อัตโนมัติ");
+                }
+            }, 1000);
+        }
+
+        function inputDigit(digit) {
+            if (isGameOver) return;
+            playSound('click');
+            let idx = currentInput.indexOf('');
+            if (idx !== -1) {
+                currentInput[idx] = digit;
+                updateSlotsUI();
+            }
+        }
+
+        function clearInput() {
+            if (isGameOver) return;
+            playSound('click');
+            currentInput = ['', '', '', ''];
+            updateSlotsUI();
+        }
+
+        function updateSlotsUI() {
+            for (let i = 0; i < 4; i++) {
+                const slot = document.getElementById(`slot-${i}`);
+                slot.textContent = currentInput[i] !== '' ? currentInput[i] : '-';
+            }
+        }
+
+        function submitCode() {
+            if (isGameOver) return;
+            if (currentInput.includes('')) {
+                showFeedback("กรุณากรอกรหัสให้ครบ 4 หลักก่อนยืนยัน", "error");
+                return;
+            }
+
+            attemptCount++;
+            attemptsDisplay.textContent = attemptCount;
+
+            let guess = currentInput.map(Number);
+            let b = 0, c = 0;
+
+            for (let i = 0; i < 4; i++) {
+                if (guess[i] === secretCode[i]) {
+                    b++;
+                } else if (secretCode.includes(guess[i])) {
+                    c++;
+                }
+            }
+
+            if (b === 4) {
+                playSound('correct');
+                endGame(true, `ACCESS GRANTED! ถอดรหัสสำเร็จใน ${attemptCount} ครั้ง`);
+            } else {
+                playSound('error');
+                showFeedback(`รหัส [${guess.join('')}] -> ตรงตำแหน่ง: ${b}, ผิดตำแหน่ง: ${c} (ผลลัพธ์จะหายไปใน 10 วิ)`, "error");
+                currentInput = ['', '', '', ''];
+                updateSlotsUI();
+            }
+        }
+
+        function showFeedback(msg, type) {
+            clearTimeout(feedbackTimeout);
+            feedbackBanner.className = `feedback-banner ${type}`;
+            feedbackBanner.innerHTML = `<span>${msg}</span>`;
+
+            // ซ่อนข้อความหลังจากผ่านไป 10 วินาที
+            feedbackTimeout = setTimeout(() => {
+                feedbackBanner.className = "feedback-banner";
+                feedbackBanner.innerHTML = `<span>[รอรับคำสั่งถัดไป... ผลลัพธ์รอบก่อนถูกลบเพื่อความปลอดภัย]</span>`;
+            }, 10000);
+        }
+
+        function endGame(isWin, message) {
+            isGameOver = true;
+            clearInterval(timerInterval);
+            footerStatus.textContent = isWin ? "สถานะ: ACCESS GRANTED" : "สถานะ: SYSTEM LOCKDOWN";
+            
+            showFeedback(message, isWin ? "success" : "error");
+
+            if (isWin) {
+                saveHighScore();
+                setTimeout(() => {
+                    alert(`🎉 ยอดเยี่ยม! คุณเจาะระบบสำเร็จใน ${attemptCount} ครั้ง`);
+                    initGame();
+                }, 1000);
+            } else {
+                setTimeout(() => {
+                    alert(`❌ หมดเวลา! รหัสที่ถูกต้องคือ ${secretCode.join('')}`);
+                    initGame();
+                }, 1000);
+            }
+        }
+
+        function saveHighScore() {
+            const currentUser = JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' };
+            const bestScores = JSON.parse(localStorage.getItem('arcade_cipher_scores') || '{}');
+            const currentWins = bestScores[currentUser.username] || 0;
+            bestScores[currentUser.username] = currentWins + 1;
+            localStorage.setItem('arcade_cipher_scores', JSON.stringify(bestScores));
+        }
+
+
+        initGame();
+    </script>
+</body>
+</html>
