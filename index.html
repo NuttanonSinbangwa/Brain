@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brain Arcade Hub - ศูนย์รวมเกมฝึกสมอง</title>
+    <title>Bboss Community</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -11,7 +11,154 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
-        @import "tailwindcss";
+/* ===== Shared top menu ===== */
+/* Shared top menu bar for every game page.
+   Layout: [ back to home ]   [ BRAIN ARCADE ]   [ sound ]
+   Per-page width: set style="--nav-max: 520px" on the <nav>. */
+
+.game-nav {
+    position: relative;
+    z-index: 20;
+    width: 100%;
+    max-width: var(--nav-max, 42rem);
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    margin: 0 auto 16px;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    font-family: 'Kanit', 'Prompt', sans-serif;
+}
+
+.game-nav .nav-back {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 12px;
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    color: #a5b4fc;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.game-nav .nav-back:hover {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: #818cf8;
+    box-shadow: 0 0 14px rgba(129, 140, 248, 0.4);
+    transform: translateY(-1px);
+}
+
+.game-nav .nav-back:active {
+    transform: scale(0.96);
+}
+
+.game-nav .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    font-size: 0.95rem;
+    letter-spacing: 2px;
+    color: #fff;
+    white-space: nowrap;
+}
+
+.game-nav .nav-brand i {
+    color: #818cf8;
+}
+
+.game-nav .nav-actions {
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.game-nav .nav-icon-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.game-nav .nav-icon-btn:hover {
+    background: #334155;
+}
+
+.game-nav .nav-icon-btn:active {
+    transform: scale(0.95);
+}
+
+.game-nav .nav-icon-btn.muted {
+    color: #fb7185;
+}
+
+/* Secondary "back to home" link used inside game-over / win modals */
+.btn-home-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    color: #a5b4fc;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.25s ease;
+}
+
+.btn-home-link:hover {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: #818cf8;
+}
+
+@media (max-width: 480px) {
+    .game-nav {
+        padding: 8px 10px;
+        gap: 6px;
+    }
+    .game-nav .nav-back span {
+        display: none;
+    }
+    .game-nav .nav-back {
+        padding: 0;
+        width: 40px;
+        justify-content: center;
+    }
+    .game-nav .nav-brand {
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+    }
+}
+
+</style>
+    <style>
         body {
             font-family: 'Kanit', 'Rajdhani', sans-serif;
             background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
@@ -68,12 +215,21 @@
             box-shadow: 0 16px 32px -4px rgba(6, 182, 212, 0.3);
         }
 
+        .glass-card-reflex:hover {
+            border-color: rgba(236, 72, 153, 0.6);
+            transform: translateY(-6px);
+            box-shadow: 0 16px 32px -4px rgba(236, 72, 153, 0.3);
+        }
+
         /* Neon Glow Badges */
         .glow-indigo {
             box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
         }
         .glow-cyan {
             box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+        }
+        .glow-pink {
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
         }
 
         /* Custom Input Styles */
@@ -90,42 +246,35 @@
         }
     </style>
 </head>
-<body class="flex flex-col justify-between items-center p-4 md:p-8 min-h-screen">
+<body class="flex flex-col justify-start items-center p-4 md:p-8 min-h-screen">
 
     <!-- Background Grid Lines -->
-    <div class="fixed inset-0 bg-[linear-gradient(to_right,#1f293710_1px,transparent_1px),linear-gradient(to_bottom,#1f293710_1px,transparent_1px)] bg-size-[4rem_4rem] pointer-events-none"></div>
+    <div class="fixed inset-0 bg-[linear-gradient(to_right,#1f293710_1px,transparent_1px),linear-gradient(to_bottom,#1f293710_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none"></div>
 
-    <!-- Navigation Header -->
-    <nav class="w-full max-w-5xl glass-panel rounded-2xl px-6 py-4 mb-6 flex justify-between items-center z-10">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to from-indigo-500/30 to-purple-500/30 text-indigo-400 border border-indigo-500/40 flex items-center justify-center text-xl glow-indigo">
-                <i class="fa-solid fa-gamepad"></i>
-            </div>
-            <div>
-                <span class="font-orbitron font-extrabold text-lg md:text-xl tracking-wider text-white">BRAIN ARCADE</span>
-                <span class="hidden md:inline-block text-xs text-slate-400 ml-2 border-l border-slate-700 pl-2">HUB PORTAL</span>
-            </div>
+    <!-- Shared top menu (same layout as the game pages: left / brand / right) -->
+    <nav class="game-nav" style="--nav-max: 64rem">
+        <!-- Left: user / account -->
+        <div id="user-bar" class="flex items-center gap-2 justify-self-start">
+            <!-- Injected via JS when logged in or out -->
         </div>
 
-        <div class="flex items-center gap-3">
-            <!-- User Status / Account Action Button -->
-            <div id="user-bar" class="flex items-center gap-2">
-                <!-- Injected via JS when logged in or out -->
-            </div>
+        <!-- Center: brand -->
+        <div class="nav-brand"><i class="fa-solid fa-gamepad"></i> BRAIN ARCADE</div>
 
-            <!-- Sound Button -->
-            <button id="sound-toggle-btn" class="w-10 h-10 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition border border-slate-700 active:scale-95">
+        <!-- Right: sound -->
+        <div class="nav-actions">
+            <button id="sound-toggle-btn" class="nav-icon-btn" title="เปิด/ปิดเสียง">
                 <i id="sound-icon" class="fa-solid fa-volume-high"></i>
             </button>
         </div>
     </nav>
 
     <!-- Main Content Area -->
-    <main class="w-full max-w-5xl grow flex flex-col justify-center items-center my-4 z-10">
+    <main class="w-full max-w-5xl flex-grow flex flex-col justify-center items-center my-4 z-10">
         
         <!-- Dashboard Title -->
         <div class="text-center mb-10 md:mb-14">
-            <h1 class="text-4xl md:text-6xl font-black font-orbitron bg-clip-text text-transparent bg-linear-to-r from-cyan-400 via-indigo-300 to-fuchsia-400 tracking-wider mb-3 drop-shadow-sm">
+            <h1 class="text-4xl md:text-6xl font-black font-orbitron bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-indigo-300 to-fuchsia-400 tracking-wider mb-3 drop-shadow-sm">
                 ARCADE GAME HUB
             </h1>
             <p class="text-slate-400 text-base md:text-lg max-w-xl mx-auto font-light">
@@ -133,7 +282,7 @@
             </p>
         </div>
 
-        <!-- 2 Game Selection Cards -->
+        <!-- Game Selection Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full px-2">
             
             <!-- Game 1 Card: Memory Cards -->
@@ -163,7 +312,6 @@
                         <span id="best-memory-time" class="font-mono text-cyan-400 font-bold text-base">--:--</span>
                     </div>
 
-                    <!-- Navigation Link to Game 1 -->
                     <a href="memory.html" onclick="playClickSound()" class="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-indigo-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-3 text-base font-orbitron tracking-wider">
                         <i class="fa-solid fa-play"></i> เล่นเกมนี้
                     </a>
@@ -197,28 +345,27 @@
                         <span id="best-pattern-level" class="font-mono text-fuchsia-400 font-bold text-base">0</span>
                     </div>
 
-                    <!-- Navigation Link to Game 2 -->
                     <a href="pattern.html" onclick="playClickSound()" class="w-full bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-cyan-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-3 text-base font-orbitron tracking-wider">
                         <i class="fa-solid fa-play"></i> เล่นเกมนี้
                     </a>
                 </div>
             </div>
 
-            <!-- Game 1 Card: Memory Cards -->
-            <div class="glass-card glass-card-memory rounded-3xl p-6 md:p-8 flex flex-col justify-between">
+            <!-- Game 3 Card: Cyber Reflex -->
+            <div class="glass-card glass-card-reflex rounded-3xl p-6 md:p-8 flex flex-col justify-between">
                 <div>
                     <div class="flex justify-between items-start mb-5">
-                        <div class="w-16 h-16 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-3xl glow-indigo">
-                            <i class="fa-solid fa-brain"></i>
+                        <div class="w-16 h-16 rounded-2xl bg-pink-500/20 text-pink-400 border border-pink-500/30 flex items-center justify-center text-3xl glow-pink">
+                            <i class="fa-solid fa-bolt"></i>
                         </div>
-                        <span class="px-3.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
-                            ความจำระยะสั้น
+                        <span class="px-3.5 py-1 rounded-full text-xs font-semibold bg-pink-500/10 text-pink-300 border border-pink-500/30">
+                            ความเร็ว
                         </span>
                     </div>
 
-                    <h2 class="text-2xl md:text-3xl font-bold text-white mb-3">Memory Cards</h2>
+                    <h2 class="text-2xl md:text-3xl font-bold text-white mb-3">Cyber Reflex</h2>
                     <p class="text-slate-400 text-sm md:text-base mb-6 leading-relaxed">
-                        เปิดการ์ดและจับคู่ภาพสัญลักษณ์ที่เหมือนกัน ท้าทายสมาธิโดยใช้เวลาและจำนวนครั้งให้น้อยที่สุด
+                        ผู้เล่นต้อง กดปุ่มที่สว่างขึ้นให้เร็วที่สุด ก่อนที่แสงจะหายไป ห้ามกดช่องสีแดง
                     </p>
                 </div>
 
@@ -226,13 +373,12 @@
                     <!-- Stats Preview -->
                     <div class="bg-slate-900/70 rounded-2xl p-3.5 mb-5 flex justify-between items-center text-xs md:text-sm text-slate-300 border border-slate-800">
                         <span class="flex items-center gap-2">
-                            <i class="fa-solid fa-trophy text-amber-400"></i> เวลาดีที่สุด:
+                            <i class="fa-solid fa-trophy text-amber-400"></i> คะแนนสูงสุด:
                         </span>
-                        <span id="best-memory-time" class="font-mono text-cyan-400 font-bold text-base">--:--</span>
+                        <span id="best-reflex-score" class="font-mono text-amber-300 font-bold text-base">0</span>
                     </div>
 
-                    <!-- Navigation Link to Game 1 -->
-                    <a href="cyber_reflex.html" onclick="playClickSound()" class="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-indigo-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-3 text-base font-orbitron tracking-wider">
+                    <a href="cyber_reflex.html" onclick="playClickSound()" class="w-full bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-pink-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-3 text-base font-orbitron tracking-wider">
                         <i class="fa-solid fa-play"></i> เล่นเกมนี้
                     </a>
                 </div>
@@ -323,9 +469,9 @@
     </footer>
 
     <script>
-        // --- Synthesized Sound Effect ---
-        let soundMuted = false;
-        
+        // --- Synthesized Sound Effect (mute state shared with all game pages) ---
+        let soundMuted = localStorage.getItem('arcade_muted') === '1';
+
         function playClickSound() {
             if (soundMuted) return;
             try {
@@ -345,10 +491,17 @@
 
         const soundBtn = document.getElementById('sound-toggle-btn');
         const soundIcon = document.getElementById('sound-icon');
-        
+
+        function renderSoundBtn() {
+            soundIcon.className = soundMuted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('muted', soundMuted);
+        }
+        renderSoundBtn();
+
         soundBtn.addEventListener('click', () => {
             soundMuted = !soundMuted;
-            soundIcon.className = soundMuted ? 'fa-solid fa-volume-xmark text-rose-400' : 'fa-solid fa-volume-high';
+            localStorage.setItem('arcade_muted', soundMuted ? '1' : '0');
+            renderSoundBtn();
         });
 
         // --- AUTHENTICATION & USER SYSTEM ---
@@ -367,18 +520,18 @@
             const userBar = document.getElementById('user-bar');
             if (currentUser) {
                 userBar.innerHTML = `
-                    <button onclick="openProfileModal()" class="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold border border-indigo-500/30 transition">
+                    <button onclick="openProfileModal()" class="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 px-3.5 h-10 rounded-xl text-xs font-semibold border border-indigo-500/30 transition">
                         <i class="fa-solid fa-circle-user text-indigo-400 text-sm"></i>
-                        <span>${currentUser.displayName || currentUser.username}</span>
+                        <span class="hidden sm:inline">${currentUser.displayName || currentUser.username}</span>
                     </button>
-                    <button onclick="logout()" class="w-9 h-9 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center transition active:scale-95" title="ออกจากระบบ">
+                    <button onclick="logout()" class="nav-icon-btn !text-rose-400 !border-rose-500/30 !bg-rose-500/10" title="ออกจากระบบ">
                         <i class="fa-solid fa-right-from-bracket"></i>
                     </button>
                 `;
             } else {
                 userBar.innerHTML = `
-                    <button onclick="openAuthModal('login')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-md shadow-indigo-500/20">
-                        <i class="fa-solid fa-user mr-1"></i> เข้าสู่ระบบ / สมัครสมาชิก
+                    <button onclick="openAuthModal('login')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 h-10 rounded-xl text-xs font-bold transition shadow-md shadow-indigo-500/20">
+                        <i class="fa-solid fa-user mr-1"></i> <span class="hidden sm:inline">เข้าสู่ระบบ / สมัครสมาชิก</span>
                     </button>
                 `;
             }
@@ -512,21 +665,26 @@
 
         // Load High Scores from localStorage
         function loadHighScores() {
+            // Memory + Pattern
+            let memoryText = localStorage.getItem('hub_best_memory_time') || '--:--';
+            let patternText = localStorage.getItem('pattern_recall_high_score') || '0';
+
             if (currentUser) {
                 const db = getUsersDB();
                 const userRecord = db[currentUser.username];
                 if (userRecord && userRecord.scores) {
-                    document.getElementById('best-memory-time').textContent = userRecord.scores.memory || '--:--';
-                    document.getElementById('best-pattern-level').textContent = userRecord.scores.pattern || '0';
-                    return;
+                    memoryText = userRecord.scores.memory || memoryText;
+                    patternText = userRecord.scores.pattern || patternText;
                 }
             }
 
-            const memoryTime = localStorage.getItem('hub_best_memory_time');
-            document.getElementById('best-memory-time').textContent = memoryTime || '--:--';
+            document.getElementById('best-memory-time').textContent = memoryText;
+            document.getElementById('best-pattern-level').textContent = patternText;
 
-            const patternLevel = localStorage.getItem('pattern_recall_high_score');
-            document.getElementById('best-pattern-level').textContent = patternLevel || '0';
+            // Reflex (saved per username by cyber_reflex.html)
+            const reflexScores = JSON.parse(localStorage.getItem('arcade_reflex_scores') || '{}');
+            const reflexKey = currentUser ? currentUser.username : 'guest';
+            document.getElementById('best-reflex-score').textContent = reflexScores[reflexKey] || 0;
         }
 
         window.onload = () => {
