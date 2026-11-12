@@ -3,493 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pattern Recall - Cyber Grid Memory Game</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
+    <title>Pattern Recall - เกมจำลำดับ</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="nav.css">
     <style>
-/* ===== Shared top menu ===== */
-/* Shared top menu bar for every game page.
-   Layout: [ back to home ]   [ BRAIN ARCADE ]   [ sound ]
-   Per-page width: set style="--nav-max: 520px" on the <nav>. */
-
-.game-nav {
-    position: relative;
-    z-index: 20;
-    width: 100%;
-    max-width: var(--nav-max, 42rem);
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
-    margin: 0 auto 16px;
-    background: rgba(15, 23, 42, 0.75);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    font-family: 'Kanit', 'Prompt', sans-serif;
-}
-
-.game-nav .nav-back {
-    justify-self: start;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 40px;
-    padding: 0 14px;
-    border-radius: 12px;
-    background: rgba(99, 102, 241, 0.12);
-    border: 1px solid rgba(99, 102, 241, 0.4);
-    color: #a5b4fc;
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.25s ease;
-}
-
-.game-nav .nav-back:hover {
-    background: rgba(99, 102, 241, 0.25);
-    border-color: #818cf8;
-    box-shadow: 0 0 14px rgba(129, 140, 248, 0.4);
-    transform: translateY(-1px);
-}
-
-.game-nav .nav-back:active {
-    transform: scale(0.96);
-}
-
-.game-nav .nav-brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 800;
-    font-size: 0.95rem;
-    letter-spacing: 2px;
-    color: #fff;
-    white-space: nowrap;
-}
-
-.game-nav .nav-brand i {
-    color: #818cf8;
-}
-
-.game-nav .nav-actions {
-    justify-self: end;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.game-nav .nav-icon-btn {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    background: rgba(30, 41, 59, 0.8);
-    border: 1px solid #334155;
-    color: #cbd5e1;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.game-nav .nav-icon-btn:hover {
-    background: #334155;
-}
-
-.game-nav .nav-icon-btn:active {
-    transform: scale(0.95);
-}
-
-.game-nav .nav-icon-btn.muted {
-    color: #fb7185;
-}
-
-/* Secondary "back to home" link used inside game-over / win modals */
-.btn-home-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    margin-top: 10px;
-    padding: 12px 16px;
-    border-radius: 16px;
-    background: rgba(99, 102, 241, 0.12);
-    border: 1px solid rgba(99, 102, 241, 0.4);
-    color: #a5b4fc;
-    font-weight: 700;
-    text-decoration: none;
-    transition: all 0.25s ease;
-}
-
-.btn-home-link:hover {
-    background: rgba(99, 102, 241, 0.25);
-    border-color: #818cf8;
-}
-
-@media (max-width: 480px) {
-    .game-nav {
-        padding: 8px 10px;
-        gap: 6px;
-    }
-    .game-nav .nav-back span {
-        display: none;
-    }
-    .game-nav .nav-back {
-        padding: 0;
-        width: 40px;
-        justify-content: center;
-    }
-    .game-nav .nav-brand {
-        font-size: 0.8rem;
-        letter-spacing: 1px;
-    }
-}
-
-</style>
-    <style>
-        body {
-            font-family: 'Rajdhani', sans-serif;
-            background: radial-gradient(circle at center, #111827 0%, #030712 100%);
-            min-height: 100vh;
-            color: #f3f4f6;
-            touch-action: manipulation;
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 360px;
+            margin: 0 auto 22px;
         }
 
-        .font-orbitron {
-            font-family: 'Orbitron', sans-serif;
-        }
-
-        /* Glassmorphism Containers */
-        .glass-panel {
-            background: rgba(17, 24, 39, 0.75);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-        }
-
-        /* Neon Grid Tiles Base */
         .tile {
-            position: relative;
-            background: rgba(31, 41, 55, 0.6);
-            border: 2px solid rgba(255, 255, 255, 0.08);
-            border-radius: 1rem;
-            transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-soft);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            color: var(--muted);
+            font-size: 1.5rem;
             cursor: pointer;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
         }
+        .tile i { opacity: 0.5; transition: opacity 0.15s; }
+        .tile:hover { border-color: var(--accent); }
+        .tile:active { transform: scale(0.96); }
 
-        .tile:hover {
-            border-color: rgba(255, 255, 255, 0.25);
-            transform: translateY(-2px);
+        .tile.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--on-accent);
+            transform: scale(1.03);
         }
+        .tile.active i { opacity: 1; }
 
-        .tile:active {
-            transform: scale(0.95);
-        }
-
-        /* Tile Active/Flashing Colors & Glows */
-        .tile-0.active {
-            background-color: #06b6d4 !important; /* Cyan */
-            border-color: #67e8f9 !important;
-            box-shadow: 0 0 30px #06b6d4, inset 0 0 15px #cffaff;
-        }
-
-        .tile-1.active {
-            background-color: #ec4899 !important; /* Pink */
-            border-color: #f472b6 !important;
-            box-shadow: 0 0 30px #ec4899, inset 0 0 15px #fce7f3;
-        }
-
-        .tile-2.active {
-            background-color: #10b981 !important; /* Emerald */
-            border-color: #34d399 !important;
-            box-shadow: 0 0 30px #10b981, inset 0 0 15px #d1fae5;
-        }
-
-        .tile-3.active {
-            background-color: #f59e0b !important; /* Amber */
-            border-color: #fbbf24 !important;
-            box-shadow: 0 0 30px #f59e0b, inset 0 0 15px #fef3c7;
-        }
-
-        .tile-4.active {
-            background-color: #8b5cf6 !important; /* Purple */
-            border-color: #a78bfa !important;
-            box-shadow: 0 0 30px #8b5cf6, inset 0 0 15px #ede9fe;
-        }
-
-        .tile-5.active {
-            background-color: #ef4444 !important; /* Red */
-            border-color: #f87171 !important;
-            box-shadow: 0 0 30px #ef4444, inset 0 0 15px #fee2e2;
-        }
-
-        .tile-6.active {
-            background-color: #3b82f6 !important; /* Blue */
-            border-color: #60a5fa !important;
-            box-shadow: 0 0 30px #3b82f6, inset 0 0 15px #dbeafe;
-        }
-
-        .tile-7.active {
-            background-color: #84cc16 !important; /* Lime */
-            border-color: #a3e635 !important;
-            box-shadow: 0 0 30px #84cc16, inset 0 0 15px #ecfccb;
-        }
-
-        .tile-8.active {
-            background-color: #f97316 !important; /* Orange */
-            border-color: #fb923c !important;
-            box-shadow: 0 0 30px #f97316, inset 0 0 15px #ffedd5;
-        }
-
-        /* Pulse Animations */
-        @keyframes error-shake {
+        .board.shake { animation: shake 0.4s both; }
+        @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-10px); }
-            40%, 80% { transform: translateX(10px); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
         }
 
-        .shake-board {
-            animation: error-shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        .status {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            background: var(--bg-soft);
+            color: var(--muted);
+            margin-bottom: 20px;
+            transition: all 0.25s;
         }
+        .status.watch { background: var(--accent-soft); color: var(--accent); }
+        .status.go { background: var(--good-soft); color: var(--good); }
+        .status.fail { background: var(--bad-soft); color: var(--bad); }
     </style>
 </head>
-<body class="flex flex-col justify-start items-center p-4 md:p-6 min-h-screen select-none overflow-x-hidden">
-
-    <!-- Background Grid Effects -->
-    <div class="fixed inset-0 bg-[linear-gradient(to_right,#1f293710_1px,transparent_1px),linear-gradient(to_bottom,#1f293710_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none"></div>
-
-    <!-- Shared top menu -->
-    <nav class="game-nav" style="--nav-max: 36rem">
-        <a href="index.html" class="nav-back" title="กลับหน้าหลัก">
-            <i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span>
-        </a>
-        <div class="nav-brand"><i class="fa-solid fa-gamepad"></i> BRAIN ARCADE</div>
+<body>
+    <nav class="game-nav" style="--nav-max: 520px">
+        <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
+        <div class="nav-brand">BRAIN ARCADE</div>
         <div class="nav-actions">
-            <button id="sound-btn" class="nav-icon-btn" title="เปิด/ปิดเสียง">
-                <i id="sound-icon" class="fa-solid fa-volume-high"></i>
-            </button>
+            <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
         </div>
     </nav>
 
-    <!-- Header Section -->
-    <header class="w-full max-w-xl text-center z-10 mb-2">
-        <h1 class="text-3xl md:text-5xl font-black font-orbitron bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-emerald-400 tracking-wider mb-1">
-            PATTERN RECALL
-        </h1>
-        <p class="text-slate-400 text-sm md:text-base font-semibold tracking-wide">จำลำดับการส่องแสงของนีออนเจมแล้วกดตามให้ถูกต้อง!</p>
-    </header>
+    <div class="panel" style="--w: 520px">
+        <h1 class="title">Pattern Recall</h1>
+        <p class="subtitle">จำลำดับช่องที่สว่างขึ้น แล้วกดตามให้ถูกต้อง</p>
 
-    <!-- Score & Stats Bar -->
-    <div class="w-full max-w-xl glass-panel rounded-2xl p-4 my-2 z-10 flex justify-around items-center px-6 md:px-8">
-        <!-- Current Level -->
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-xl">
-                <i class="fa-solid fa-layer-group"></i>
-            </div>
-            <div>
-                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">ด่าน (Level)</div>
-                <div id="level-val" class="text-xl md:text-2xl font-black font-orbitron text-cyan-400">1</div>
-            </div>
+        <div class="stats" style="--cols: 3">
+            <div><span class="stat-label">Level</span><span id="level-val" class="stat-value">1</span></div>
+            <div><span class="stat-label">Best</span><span id="best-val" class="stat-value">0</span></div>
+            <div><span class="stat-label">Streak</span><span id="streak-val" class="stat-value">0</span></div>
         </div>
 
-        <!-- High Score -->
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-400 flex items-center justify-center text-xl">
-                <i class="fa-solid fa-trophy"></i>
-            </div>
-            <div>
-                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">สถิติสูงสุด (Best)</div>
-                <div id="best-val" class="text-xl md:text-2xl font-black font-orbitron text-fuchsia-400">0</div>
-            </div>
-        </div>
+        <div id="status-badge" class="status">กด "เริ่มเกม" เพื่อท้าทายความจำ</div>
 
-        <!-- Streak Counter -->
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center text-xl">
-                <i class="fa-solid fa-fire"></i>
-            </div>
-            <div>
-                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">คอมโบ (Streak)</div>
-                <div id="streak-val" class="text-xl md:text-2xl font-black font-orbitron text-amber-400">0</div>
-            </div>
-        </div>
+        <div id="game-board" class="board"></div>
+
+        <button id="start-btn" class="btn"><i class="fa-solid fa-play"></i> เริ่มเกม</button>
     </div>
 
-    <!-- Status Indicator -->
-    <div class="w-full max-w-xl text-center my-2 z-10">
-        <span id="status-badge" class="inline-flex items-center gap-2 px-5 py-2 rounded-full font-orbitron text-xs md:text-sm font-bold bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 shadow-lg transition-all duration-300">
-            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
-            กด "เริ่มเกม" เพื่อท้าทายความจำ!
-        </span>
-    </div>
-
-    <!-- Main Game Board Grid (3x3 = 9 Tiles) -->
-    <main id="game-board" class="w-full max-w-md aspect-square grid grid-cols-3 gap-3 md:gap-4 p-4 glass-panel rounded-3xl z-10 transition-transform duration-300 my-auto">
-        <!-- 9 Tiles injected dynamically -->
-    </main>
-
-    <!-- Bottom Controls -->
-    <footer class="w-full max-w-xl flex gap-4 justify-center mt-4 z-10">
-        <button id="start-btn" class="w-full md:w-auto font-orbitron font-extrabold text-base md:text-lg bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500 hover:from-cyan-400 hover:to-fuchsia-400 text-white py-3.5 px-10 rounded-2xl shadow-lg shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95 tracking-wider flex items-center justify-center gap-3">
-            <i class="fa-solid fa-play"></i> เริ่มเล่นเกม
-        </button>
-    </footer>
-
-    <!-- Game Over Modal -->
-    <div id="game-over-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-        <div class="glass-panel bg-slate-900/90 border border-rose-500/30 rounded-3xl p-6 md:p-8 text-center max-w-sm w-full shadow-2xl transform scale-90 transition-transform duration-300" id="modal-content">
-            <div class="w-20 h-20 bg-rose-500/20 text-rose-400 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 border border-rose-500/30">
-                <i class="fa-solid fa-xmark"></i>
+    <div id="game-over-modal" class="modal-backdrop">
+        <div class="modal">
+            <div class="icon bad"><i class="fa-solid fa-xmark"></i></div>
+            <h2>จบเกม</h2>
+            <p>คุณกดผิดลำดับ ลองใหม่อีกครั้งได้เลย</p>
+            <div class="result-row">
+                <div><span class="stat-label">ด่านที่ถึง</span><span id="final-level" class="num">1</span></div>
+                <div><span class="stat-label">สถิติสูงสุด</span><span id="final-best" class="num">1</span></div>
             </div>
-            <h2 class="text-3xl font-black font-orbitron text-white mb-1">GAME OVER</h2>
-            <p class="text-slate-400 text-sm mb-6">คุณกดผิดลำดับสัญญาณไฟ!</p>
-            
-            <div class="bg-slate-800/60 rounded-2xl p-4 flex justify-around mb-6 border border-slate-700/50">
-                <div>
-                    <span class="block text-xs text-slate-400 mb-1 font-bold uppercase">ด่านที่ไปถึง</span>
-                    <span id="final-level" class="text-2xl font-black font-orbitron text-cyan-400">1</span>
-                </div>
-                <div class="w-px bg-slate-700"></div>
-                <div>
-                    <span class="block text-xs text-slate-400 mb-1 font-bold uppercase">สถิติสูงสุด</span>
-                    <span id="final-best" class="text-2xl font-black font-orbitron text-fuchsia-400">1</span>
-                </div>
+            <div class="actions">
+                <button id="modal-restart" class="btn block"><i class="fa-solid fa-rotate-right"></i> ลองใหม่อีกครั้ง</button>
+                <a href="index.html" class="btn btn-ghost block">กลับหน้าหลัก</a>
             </div>
-
-            <button id="modal-restart" class="w-full font-orbitron font-bold bg-gradient-to-r from-rose-500 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white py-3.5 px-6 rounded-2xl shadow-lg shadow-rose-500/30 transition-all transform active:scale-95 text-lg flex items-center justify-center gap-2">
-                <i class="fa-solid fa-rotate-right"></i> ลองใหม่อีกครั้ง
-            </button>
-            <a href="index.html" class="btn-home-link">
-                <i class="fa-solid fa-house"></i> กลับหน้าหลัก
-            </a>
         </div>
     </div>
 
     <script>
-        // --- Web Audio Synthesizer ---
         class SynthAudio {
             constructor() {
                 this.ctx = null;
-                // mute state is shared across all game pages
-                this.muted = localStorage.getItem('arcade_muted') === '1';
-                // Frequencies corresponding to 9 tiles (Major Pentatonic scale tones for harmonious sound)
-                this.frequencies = [
-                    261.63, // C4 (Tile 0)
-                    293.66, // D4 (Tile 1)
-                    329.63, // E4 (Tile 2)
-                    392.00, // G4 (Tile 3)
-                    440.00, // A4 (Tile 4)
-                    523.25, // C5 (Tile 5)
-                    587.33, // D5 (Tile 6)
-                    659.25, // E5 (Tile 7)
-                    783.99  // G5 (Tile 8)
-                ];
+                this.muted = false;
+                this.frequencies = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99];
             }
-
             init() {
-                if (!this.ctx) {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                }
+                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
             }
-
+            tone(freq, type, duration, vol, delay = 0) {
+                try {
+                    const t = this.ctx.currentTime + delay;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, t);
+                    gain.gain.setValueAtTime(vol, t);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(t);
+                    osc.stop(t + duration);
+                } catch (e) {}
+            }
             playTileSound(index, duration = 0.3) {
                 if (this.muted) return;
                 this.init();
-                try {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(this.frequencies[index % this.frequencies.length], this.ctx.currentTime);
-
-                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
-
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-
-                    osc.start();
-                    osc.stop(this.ctx.currentTime + duration);
-                } catch (e) {}
+                this.tone(this.frequencies[index % 9], 'sine', duration, 0.12);
             }
-
             playFailSound() {
                 if (this.muted) return;
                 this.init();
                 try {
+                    const t = this.ctx.currentTime;
                     const osc = this.ctx.createOscillator();
                     const gain = this.ctx.createGain();
-
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(140, this.ctx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(60, this.ctx.currentTime + 0.5);
-
-                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.5);
-
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(160, t);
+                    osc.frequency.exponentialRampToValueAtTime(70, t + 0.5);
+                    gain.gain.setValueAtTime(0.15, t);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
                     osc.connect(gain);
                     gain.connect(this.ctx.destination);
-
-                    osc.start();
-                    osc.stop(this.ctx.currentTime + 0.5);
+                    osc.start(t);
+                    osc.stop(t + 0.5);
                 } catch (e) {}
             }
-
             playWinRoundSound() {
                 if (this.muted) return;
                 this.init();
-                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
-                notes.forEach((freq, idx) => {
-                    setTimeout(() => {
-                        try {
-                            const osc = this.ctx.createOscillator();
-                            const gain = this.ctx.createGain();
-                            osc.type = 'triangle';
-                            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-                            gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
-                            gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.2);
-                            osc.connect(gain);
-                            gain.connect(this.ctx.destination);
-                            osc.start();
-                            osc.stop(this.ctx.currentTime + 0.2);
-                        } catch(e) {}
-                    }, idx * 80);
-                });
+                [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => this.tone(f, 'triangle', 0.2, 0.1, i * 0.08));
             }
         }
 
         const audio = new SynthAudio();
 
-        // --- Game Logic & States ---
-        let sequence = [];
-        let playerStep = 0;
-        let level = 1;
+        let sequence = [], playerStep = 0, level = 1;
         let highScore = parseInt(localStorage.getItem('pattern_recall_high_score')) || 0;
-        let isPlayingSequence = false;
-        let isGameActive = false;
+        let isPlayingSequence = false, isGameActive = false;
 
-        // Icons for tiles decoration
-        const tileIcons = [
-            'fa-bolt', 'fa-gem', 'fa-fire',
-            'fa-star', 'fa-atom', 'fa-moon',
-            'fa-heart', 'fa-eye', 'fa-shield-halved'
-        ];
+        const tileIcons = ['fa-bolt', 'fa-gem', 'fa-fire', 'fa-star', 'fa-atom', 'fa-moon', 'fa-heart', 'fa-eye', 'fa-shield-halved'];
 
-        // DOM Elements
         const board = document.getElementById('game-board');
         const levelEl = document.getElementById('level-val');
         const bestEl = document.getElementById('best-val');
@@ -499,186 +177,123 @@
         const soundBtn = document.getElementById('sound-btn');
         const soundIcon = document.getElementById('sound-icon');
         const modal = document.getElementById('game-over-modal');
-        const modalContent = document.getElementById('modal-content');
         const modalRestart = document.getElementById('modal-restart');
         const finalLevelEl = document.getElementById('final-level');
         const finalBestEl = document.getElementById('final-best');
 
-        // Init High Score display
         bestEl.textContent = highScore;
 
-        // Render 3x3 Grid
         function renderBoard() {
             board.innerHTML = '';
             for (let i = 0; i < 9; i++) {
                 const tile = document.createElement('div');
-                tile.className = `tile tile-${i} flex items-center justify-center text-slate-500 text-2xl md:text-3xl`;
-                tile.dataset.index = i;
-                tile.innerHTML = `<i class="fa-solid ${tileIcons[i]} opacity-40 transition-opacity"></i>`;
-                
-                // Mouse & Touch events
+                tile.className = 'tile';
+                tile.innerHTML = `<i class="fa-solid ${tileIcons[i]}"></i>`;
                 tile.addEventListener('pointerdown', (e) => {
                     e.preventDefault();
                     handleTileClick(i);
                 });
-
                 board.appendChild(tile);
             }
         }
 
-        // Flash a specific tile visually and plays sound
         function flashTile(index, duration = 350) {
             return new Promise((resolve) => {
                 const tile = board.children[index];
                 if (!tile) return resolve();
-
                 tile.classList.add('active');
-                const icon = tile.querySelector('i');
-                if (icon) icon.classList.replace('opacity-40', 'opacity-100');
-                
                 audio.playTileSound(index, duration / 1000);
-
                 setTimeout(() => {
                     tile.classList.remove('active');
-                    if (icon) icon.classList.replace('opacity-100', 'opacity-40');
-                    setTimeout(resolve, 100); // short gap between flashes
+                    setTimeout(resolve, 100);
                 }, duration);
             });
         }
 
-        // Update status badge message
-        function setStatus(text, colorClass = 'text-cyan-300 bg-cyan-500/10 border-cyan-500/30', pingColor = 'bg-cyan-400') {
-            statusBadge.className = `inline-flex items-center gap-2 px-5 py-2 rounded-full font-orbitron text-xs md:text-sm font-bold shadow-lg transition-all duration-300 ${colorClass}`;
-            statusBadge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full ${pingColor} animate-ping"></span> ${text}`;
+        function setStatus(text, cls = '') {
+            statusBadge.className = 'status ' + cls;
+            statusBadge.textContent = text;
         }
 
-        // Play entire sequence
         async function playSequence() {
             isPlayingSequence = true;
-            setStatus('ตั้งใจจำลำดับแสงไฟ...', 'text-amber-300 bg-amber-500/10 border-amber-500/30', 'bg-amber-400');
-            
-            // Speed up slightly each level
-            const speed = Math.max(220, 450 - (level * 20));
-
+            setStatus('ตั้งใจจำลำดับ...', 'watch');
+            const speed = Math.max(220, 450 - level * 20);
             await new Promise(r => setTimeout(r, 600));
-
             for (let i = 0; i < sequence.length; i++) {
                 if (!isGameActive) return;
                 await flashTile(sequence[i], speed);
             }
-
             isPlayingSequence = false;
             playerStep = 0;
-            setStatus('ถึงตาคุณแล้ว! กดตามลำดับ', 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30', 'bg-emerald-400');
+            setStatus('ถึงตาคุณแล้ว กดตามลำดับ', 'go');
         }
 
-        // Start Next Level / Round
         function nextRound() {
             levelEl.textContent = level;
             streakEl.textContent = level - 1;
-
-            // Generate a COMPLETELY NEW random sequence for the current level
-            // Example: Level 1 = 1 item, Level 2 = 2 new items, Level 3 = 3 new items
             sequence = [];
-            for (let i = 0; i < level; i++) {
-                sequence.push(Math.floor(Math.random() * 9));
-            }
-
+            for (let i = 0; i < level; i++) sequence.push(Math.floor(Math.random() * 9));
             playSequence();
         }
 
-        // Start New Game Session
         function startGame() {
             sequence = [];
             level = 1;
             isGameActive = true;
             levelEl.textContent = level;
             streakEl.textContent = 0;
-            modal.classList.add('hidden');
-            modal.classList.remove('opacity-100');
-            modalContent.classList.remove('scale-100');
-            startBtn.classList.add('opacity-50', 'pointer-events-none');
+            modal.classList.remove('open');
+            startBtn.classList.add('disabled');
             nextRound();
         }
 
-        // Player Click Handler
-        async function handleTileClick(index) {
+        function handleTileClick(index) {
             if (!isGameActive || isPlayingSequence) return;
-
-            // Flash player click tile
             flashTile(index, 200);
 
-            // Check correctness
             if (index === sequence[playerStep]) {
                 playerStep++;
-
-                // Completed current round sequence!
                 if (playerStep === sequence.length) {
                     isPlayingSequence = true;
                     audio.playWinRoundSound();
-                    setStatus('ถูกต้อง! กำลังเข้าสู่ด่านถัดไป...', 'text-cyan-300 bg-cyan-500/10 border-cyan-500/30', 'bg-cyan-400');
-
-                    // Check High Score
+                    setStatus('ถูกต้อง กำลังไปด่านถัดไป', 'watch');
                     if (level > highScore) {
                         highScore = level;
                         localStorage.setItem('pattern_recall_high_score', highScore);
                         bestEl.textContent = highScore;
                     }
-
                     level++;
                     setTimeout(nextRound, 1000);
                 }
             } else {
-                // Game Over Triggered
                 gameOver();
             }
         }
 
-        // Game Over Handler
         function gameOver() {
             isGameActive = false;
             audio.playFailSound();
-            board.classList.add('shake-board');
+            board.classList.add('shake');
+            setStatus('กดผิด จบเกมแล้ว', 'fail');
+            setTimeout(() => board.classList.remove('shake'), 500);
 
-            setStatus('กดผิด! จบเกมแล้ว', 'text-rose-300 bg-rose-500/10 border-rose-500/30', 'bg-rose-500');
-
-            setTimeout(() => {
-                board.classList.remove('shake-board');
-            }, 500);
-
-            // Update modal stats
             finalLevelEl.textContent = level;
             finalBestEl.textContent = highScore;
-
-            // Show Game Over Modal
-            startBtn.classList.remove('opacity-50', 'pointer-events-none');
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.add('opacity-100');
-                modalContent.classList.add('scale-100');
-            }, 10);
+            startBtn.classList.remove('disabled');
+            startBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> เล่นอีกครั้ง';
+            setTimeout(() => modal.classList.add('open'), 450);
         }
 
-        // --- Event Listeners ---
         startBtn.addEventListener('click', startGame);
         modalRestart.addEventListener('click', startGame);
-
-        function renderSoundBtn() {
-            soundIcon.className = audio.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
-            soundBtn.classList.toggle('muted', audio.muted);
-        }
-
         soundBtn.addEventListener('click', () => {
             audio.muted = !audio.muted;
-            localStorage.setItem('arcade_muted', audio.muted ? '1' : '0');
-            renderSoundBtn();
+            soundIcon.className = audio.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('muted', audio.muted);
         });
 
-        // Initialize Board on load
-        window.onload = () => {
-            renderSoundBtn();
-            renderBoard();
-        };
+        window.onload = renderBoard;
     </script>
 </body>
 </html>

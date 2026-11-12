@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arrow Override - เกมลูกศรสลับโหมด</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        .arena {
+            background: var(--bg-soft);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 22px 16px 26px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 220px;
+            margin-bottom: 20px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .arena.mode-reverse {
+            background: var(--bad-soft);
+            border-color: var(--bad);
+        }
+
+        .protocol-badge {
+            padding: 5px 16px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            margin-bottom: 18px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            transition: all 0.2s;
+        }
+        .mode-reverse .protocol-badge {
+            background: var(--surface);
+            color: var(--bad);
+        }
+
+        .arrow-display {
+            width: 96px;
+            height: 96px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.12s ease-out;
+        }
+        .arrow-display svg {
+            width: 80px;
+            height: 80px;
+            stroke: var(--accent);
+            transition: stroke 0.2s;
+        }
+        .mode-reverse .arrow-display svg { stroke: var(--bad); }
+
+        .shake-error { animation: shake 0.3s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            50% { transform: translateX(8px); }
+            75% { transform: translateX(-5px); }
+        }
+
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 72px);
+            grid-template-rows: repeat(2, 64px);
+            gap: 8px;
+            justify-content: center;
+        }
+        .dir-btn {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            color: var(--ink);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.12s, border-color 0.12s, transform 0.1s;
+        }
+        .dir-btn:hover { border-color: var(--accent); }
+        .dir-btn:active, .dir-btn.active-press {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--on-accent);
+            transform: scale(0.95);
+        }
+        .dir-btn svg { width: 24px; height: 24px; }
+        .dir-btn span { font-size: 0.65rem; opacity: 0.6; margin-top: 2px; }
+        .btn-up { grid-column: 2; grid-row: 1; }
+        .btn-left { grid-column: 1; grid-row: 2; }
+        .btn-down { grid-column: 2; grid-row: 2; }
+        .btn-right { grid-column: 3; grid-row: 2; }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--surface);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 24px;
+            gap: 14px;
+            z-index: 10;
+        }
+        .overlay h2 { font-size: 1.5rem; font-weight: 600; }
+        .best-record { font-size: 0.85rem; color: var(--muted); }
+        .rules-box {
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            font-weight: 300;
+            text-align: left;
+            width: 100%;
+        }
+        .tag-direct { color: var(--accent); font-weight: 600; }
+        .tag-reverse { color: var(--bad); font-weight: 600; }
+
+        @media (max-width: 480px) {
+            .dpad { grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(2, 58px); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="game-nav" style="--nav-max: 540px">
+        <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
+        <div class="nav-brand">BRAIN ARCADE</div>
+        <div class="nav-actions">
+            <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
+        </div>
+    </nav>
+
+    <div class="panel" style="--w: 540px">
+        <h1 class="title">Arrow Override</h1>
+        <p class="subtitle">กดทิศทางตามกติกาของโหมด ทั้งตรงและสวนทาง</p>
+
+        <div class="stats" style="--cols: 3">
+            <div><span class="stat-label">Time</span><span class="stat-value" id="timer-val">45.0s</span></div>
+            <div><span class="stat-label">Score</span><span class="stat-value" id="score-val">0</span></div>
+            <div><span class="stat-label">Combo</span><span class="stat-value" id="combo-val">x1</span></div>
+        </div>
+
+        <div class="arena" id="signal-arena">
+            <div class="protocol-badge" id="protocol-badge">DIRECT · กดตามลูกศร</div>
+            <div class="arrow-display" id="arrow-display">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 19V5M5 12l7-7 7 7"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="dpad">
+            <button class="dir-btn btn-up" id="btn-UP" onclick="handleInput('UP')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                <span>W / ↑</span>
+            </button>
+            <button class="dir-btn btn-left" id="btn-LEFT" onclick="handleInput('LEFT')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                <span>A / ←</span>
+            </button>
+            <button class="dir-btn btn-down" id="btn-DOWN" onclick="handleInput('DOWN')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                <span>S / ↓</span>
+            </button>
+            <button class="dir-btn btn-right" id="btn-RIGHT" onclick="handleInput('RIGHT')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                <span>D / →</span>
+            </button>
+        </div>
+
+        <div class="overlay" id="overlay">
+            <h2 id="overlay-title">Arrow Override</h2>
+            <div class="best-record" id="best-record">HIGH SCORE: 0</div>
+            <div class="rules-box" id="overlay-desc">
+                ดูป้ายโหมดด้านบนก่อนกด ภายในเวลา 45 วินาที<br><br>
+                <span class="tag-direct">DIRECT</span> · กดปุ่ม <strong>ตามทิศ</strong> ที่ลูกศรชี้<br>
+                <span class="tag-reverse">REVERSE</span> · กดปุ่ม <strong>ตรงข้าม</strong> กับลูกศร<br><br>
+                รองรับปุ่มลูกศร, W A S D หรือแตะบนหน้าจอ
+            </div>
+            <button class="btn" id="start-btn" onclick="startGame()">เริ่มเกม</button>
+        </div>
+    </div>
+
+    <script>
+        const DIRECTIONS = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
+        const OPPOSITE = { UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT' };
+        const ROTATIONS = { UP: 'rotate(0deg)', RIGHT: 'rotate(90deg)', DOWN: 'rotate(180deg)', LEFT: 'rotate(270deg)' };
+
+        let score = 0, combo = 0, timeLeft = 45.0, timerInterval = null, isPlaying = false;
+        let currentMode = 'DIRECT', currentArrow = 'UP', muted = false;
+
+        const timerVal = document.getElementById('timer-val');
+        const scoreVal = document.getElementById('score-val');
+        const comboVal = document.getElementById('combo-val');
+        const arena = document.getElementById('signal-arena');
+        const protocolBadge = document.getElementById('protocol-badge');
+        const arrowDisplay = document.getElementById('arrow-display');
+        const overlay = document.getElementById('overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayDesc = document.getElementById('overlay-desc');
+        const startBtn = document.getElementById('start-btn');
+        const bestRecord = document.getElementById('best-record');
+        const soundBtn = document.getElementById('sound-btn');
+        const soundIcon = document.getElementById('sound-icon');
+
+        let audioCtx = null;
+        function playSound(type) {
+            if (muted) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'hit') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(Math.min(420 + combo * 22, 920), now);
+                    gain.gain.setValueAtTime(0.07, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    osc.start(now); osc.stop(now + 0.08);
+                } else if (type === 'miss') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(80, now + 0.2);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.start(now); osc.stop(now + 0.2);
+                } else if (type === 'end') {
+                    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g); g.connect(audioCtx.destination);
+                        o.frequency.setValueAtTime(f, now + i * 0.09);
+                        g.gain.setValueAtTime(0.08, now + i * 0.09);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.18);
+                        o.start(now + i * 0.09); o.stop(now + i * 0.09 + 0.18);
+                    });
+                }
+            } catch (e) {}
+        }
+
+        function getUser() {
+            return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' };
+        }
+
+        function loadHighScore() {
+            const scores = JSON.parse(localStorage.getItem('arcade_override_scores') || '{}');
+            const best = scores[getUser().username] || 0;
+            bestRecord.textContent = `HIGH SCORE: ${best}`;
+            return best;
+        }
+
+        function saveHighScore(newScore) {
+            const user = getUser();
+            const scores = JSON.parse(localStorage.getItem('arcade_override_scores') || '{}');
+            if (newScore > (scores[user.username] || 0)) {
+                scores[user.username] = newScore;
+                localStorage.setItem('arcade_override_scores', JSON.stringify(scores));
+                return true;
+            }
+            return false;
+        }
+
+        function startGame() {
+            score = 0; combo = 0; timeLeft = 45.0; isPlaying = true;
+            updateHUD();
+            timerVal.textContent = '45.0s';
+            overlay.style.display = 'none';
+            nextCommand();
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft -= 0.1;
+                if (timeLeft <= 0) { timeLeft = 0; endGame(); }
+                timerVal.textContent = timeLeft.toFixed(1) + 's';
+            }, 100);
+        }
+
+        function nextCommand() {
+            const reverseChance = combo < 3 ? 0.25 : 0.5;
+            currentMode = Math.random() < reverseChance ? 'REVERSE' : 'DIRECT';
+
+            let nextDir = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
+            if (nextDir === currentArrow && Math.random() < 0.6) {
+                const others = DIRECTIONS.filter(d => d !== currentArrow);
+                nextDir = others[Math.floor(Math.random() * others.length)];
+            }
+            currentArrow = nextDir;
+
+            if (currentMode === 'DIRECT') {
+                arena.className = 'arena';
+                protocolBadge.textContent = 'DIRECT · กดตามลูกศร';
+            } else {
+                arena.className = 'arena mode-reverse';
+                protocolBadge.textContent = 'REVERSE · กดสวนทาง';
+            }
+
+            arrowDisplay.style.transform = `scale(0.85) ${ROTATIONS[currentArrow]}`;
+            requestAnimationFrame(() => {
+                arrowDisplay.style.transform = `scale(1) ${ROTATIONS[currentArrow]}`;
+            });
+        }
+
+        function handleInput(dir) {
+            if (!isPlaying) return;
+
+            const btn = document.getElementById(`btn-${dir}`);
+            if (btn) {
+                btn.classList.add('active-press');
+                setTimeout(() => btn.classList.remove('active-press'), 100);
+            }
+
+            const expected = currentMode === 'DIRECT' ? currentArrow : OPPOSITE[currentArrow];
+
+            if (dir === expected) {
+                combo++;
+                score += 100 * Math.min(1 + Math.floor(combo / 5), 4);
+                playSound('hit');
+            } else {
+                combo = 0;
+                timeLeft = Math.max(0, timeLeft - 2.0);
+                playSound('miss');
+                arena.classList.remove('shake-error');
+                void arena.offsetWidth;
+                arena.classList.add('shake-error');
+            }
+            updateHUD();
+            nextCommand();
+        }
+
+        function updateHUD() {
+            scoreVal.textContent = score;
+            comboVal.textContent = `x${Math.min(1 + Math.floor(combo / 5), 4)} (${combo})`;
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            playSound('end');
+
+            const isNewRecord = saveHighScore(score);
+            loadHighScore();
+
+            overlayTitle.textContent = isNewRecord ? 'สถิติใหม่' : 'หมดเวลา';
+            overlayDesc.innerHTML = `
+                คะแนนรวมของคุณ<br>
+                <strong style="font-size:1.6rem;font-weight:600;">${score}</strong><br>
+                <span style="color:var(--muted);">${isNewRecord ? 'บันทึกสถิติสูงสุดใหม่แล้ว' : 'ลองอีกครั้งเพื่อทำลายสถิติ'}</span>
+            `;
+            startBtn.textContent = 'เล่นอีกครั้ง';
+            overlay.style.display = 'flex';
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (!isPlaying) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startGame(); }
+                return;
+            }
+            const key = e.key.toLowerCase();
+            const map = { arrowup: 'UP', w: 'UP', arrowdown: 'DOWN', s: 'DOWN', arrowleft: 'LEFT', a: 'LEFT', arrowright: 'RIGHT', d: 'RIGHT' };
+            if (map[key]) { e.preventDefault(); handleInput(map[key]); }
+        });
+
+        soundBtn.addEventListener('click', () => {
+            muted = !muted;
+            soundIcon.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('muted', muted);
+        });
+
+        loadHighScore();
+    </script>
+</body>
+</html>

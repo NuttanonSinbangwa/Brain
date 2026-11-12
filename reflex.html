@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reflex - ทดสอบเวลาตอบสนอง</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        .stimulus {
+            height: 190px;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: var(--bg-soft);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 10px;
+            color: var(--muted);
+            transition: background 0.05s;
+        }
+        .stimulus .big { font-size: 1.15rem; font-weight: 500; }
+        .stimulus .small { font-size: 0.85rem; font-weight: 300; }
+        .stimulus.wait { background: var(--bg-soft); }
+        .stimulus.green { background: var(--good); border-color: var(--good); color: #fff; }
+        .stimulus.red { background: var(--bad); border-color: var(--bad); color: #fff; }
+        .stimulus.fail { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
+        .stimulus.ok { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+        .stimulus .ms { font-size: 2.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            font-size: 0.82rem;
+            color: var(--muted);
+            margin-bottom: 18px;
+        }
+        .dot {
+            display: inline-block;
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .dot.g { background: var(--good); }
+        .dot.r { background: var(--bad); }
+
+        .pad {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            max-width: 360px;
+            margin: 0 auto 6px;
+        }
+        .pad-btn {
+            height: 72px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            color: var(--ink);
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: background 0.1s, border-color 0.1s, transform 0.1s;
+        }
+        .pad-btn i { font-size: 1.1rem; }
+        .pad-btn span { font-size: 0.68rem; color: var(--muted); font-weight: 300; }
+        .pad-btn:hover { border-color: var(--accent); }
+        .pad-btn:active, .pad-btn.press {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--on-accent);
+            transform: scale(0.97);
+        }
+        .pad-btn:active span, .pad-btn.press span { color: var(--on-accent); }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--surface);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 24px;
+            gap: 14px;
+            z-index: 10;
+        }
+        .overlay h2 { font-size: 1.5rem; font-weight: 600; }
+        .best-record { font-size: 0.85rem; color: var(--muted); }
+        .rules-box {
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            font-weight: 300;
+            text-align: left;
+            width: 100%;
+        }
+        .rules-box b { font-weight: 600; }
+        .g-txt { color: var(--good); font-weight: 600; }
+        .r-txt { color: var(--bad); font-weight: 600; }
+        .big-num { font-size: 2.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body>
+    <nav class="game-nav" style="--nav-max: 520px">
+        <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
+        <div class="nav-brand">BRAIN ARCADE</div>
+        <div class="nav-actions">
+            <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
+        </div>
+    </nav>
+
+    <div class="panel" style="--w: 520px">
+        <h1 class="title">Reflex</h1>
+        <p class="subtitle">ทดสอบเวลาตอบสนองต่อสี</p>
+
+        <div class="stats" style="--cols: 4">
+            <div><span class="stat-label">Round</span><span id="round-val" class="stat-value">0/10</span></div>
+            <div><span class="stat-label">Last</span><span id="last-val" class="stat-value">--</span></div>
+            <div><span class="stat-label">Avg</span><span id="avg-val" class="stat-value">--</span></div>
+            <div><span class="stat-label">Best</span><span id="best-val" class="stat-value">--</span></div>
+        </div>
+
+        <div id="stimulus" class="stimulus wait">
+            <div class="big" id="stim-text">พร้อมแล้วกดเริ่ม</div>
+            <div class="small" id="stim-sub"></div>
+        </div>
+
+        <div class="legend">
+            <span><i class="dot g"></i>เขียว = กดขึ้น</span>
+            <span><i class="dot r"></i>แดง = กดลง</span>
+        </div>
+
+        <div class="pad">
+            <button class="pad-btn" id="btn-UP"><i class="fa-solid fa-arrow-up"></i>ขึ้น<span>W / ↑</span></button>
+            <button class="pad-btn" id="btn-DOWN"><i class="fa-solid fa-arrow-down"></i>ลง<span>S / ↓</span></button>
+        </div>
+
+        <div class="overlay" id="overlay">
+            <h2 id="overlay-title">Reflex</h2>
+            <div class="best-record" id="best-record">BEST AVG: --</div>
+            <div class="rules-box" id="overlay-desc">
+                ทดสอบ 10 รอบ รอให้หน้าจอเปลี่ยนสีแล้วกดให้เร็วที่สุด<br><br>
+                <span class="g-txt">เขียว</span> · กดปุ่ม <b>ขึ้น</b><br>
+                <span class="r-txt">แดง</span> · กดปุ่ม <b>ลง</b><br><br>
+                กดก่อนสีขึ้นหรือกดผิดปุ่มจะไม่นับเวลา รองรับ W S, ↑ ↓ หรือแตะปุ่ม
+            </div>
+            <button class="btn" id="start-btn">เริ่มทดสอบ</button>
+        </div>
+    </div>
+
+    <script>
+        const TOTAL_ROUNDS = 10;
+        const TIMEOUT_MS = 2000;
+
+        const stim = document.getElementById('stimulus');
+        const stimText = document.getElementById('stim-text');
+        const stimSub = document.getElementById('stim-sub');
+        const roundVal = document.getElementById('round-val');
+        const lastVal = document.getElementById('last-val');
+        const avgVal = document.getElementById('avg-val');
+        const bestVal = document.getElementById('best-val');
+        const overlay = document.getElementById('overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayDesc = document.getElementById('overlay-desc');
+        const bestRecord = document.getElementById('best-record');
+        const startBtn = document.getElementById('start-btn');
+        const soundBtn = document.getElementById('sound-btn');
+        const soundIcon = document.getElementById('sound-icon');
+
+        let state = 'idle';   // idle | waiting | go | between
+        let round = 0;
+        let times = [];
+        let misses = 0;
+        let color = null;     // 'green' | 'red'
+        let goTime = 0;
+        let delayTimer = null, timeoutTimer = null, nextTimer = null;
+        let muted = false;
+
+        // --- audio ---
+        let audioCtx = null;
+        function beep(freq, dur, type = 'sine', vol = 0.08) {
+            if (muted) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const t = audioCtx.currentTime;
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t); o.stop(t + dur);
+            } catch (e) {}
+        }
+        const sfx = {
+            go: () => beep(660, 0.06),
+            ok: () => { beep(660, 0.08); setTimeout(() => beep(880, 0.1), 70); },
+            bad: () => beep(150, 0.22, 'triangle', 0.12),
+            end: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.09), i * 90))
+        };
+
+        // --- storage (lower ms = better) ---
+        function getUser() {
+            return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' };
+        }
+        function getBestAvg() {
+            const m = JSON.parse(localStorage.getItem('arcade_reflex_ms') || '{}');
+            return m[getUser().username] || null;
+        }
+        function saveBestAvg(ms) {
+            const user = getUser().username;
+            const m = JSON.parse(localStorage.getItem('arcade_reflex_ms') || '{}');
+            if (!m[user] || ms < m[user]) {
+                m[user] = ms;
+                localStorage.setItem('arcade_reflex_ms', JSON.stringify(m));
+                return true;
+            }
+            return false;
+        }
+        function showBestRecord() {
+            const b = getBestAvg();
+            bestRecord.textContent = `BEST AVG: ${b ? b + ' ms' : '--'}`;
+        }
+
+        // --- UI helpers ---
+        function setStim(cls, text, sub = '') {
+            stim.className = 'stimulus ' + cls;
+            stimText.className = 'big';
+            stimText.textContent = text;
+            stimSub.textContent = sub;
+        }
+        function updateStats() {
+            roundVal.textContent = `${Math.min(round, TOTAL_ROUNDS)}/${TOTAL_ROUNDS}`;
+            if (times.length) {
+                const avg = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+                avgVal.textContent = avg + 'ms';
+                bestVal.textContent = Math.min(...times) + 'ms';
+            } else {
+                avgVal.textContent = '--';
+                bestVal.textContent = '--';
+            }
+        }
+        function clearTimers() {
+            clearTimeout(delayTimer);
+            clearTimeout(timeoutTimer);
+            clearTimeout(nextTimer);
+        }
+
+        // --- game flow ---
+        function startGame() {
+            clearTimers();
+            round = 0; times = []; misses = 0;
+            lastVal.textContent = '--';
+            updateStats();
+            overlay.style.display = 'none';
+            nextRound();
+        }
+
+        function nextRound() {
+            if (round >= TOTAL_ROUNDS) return endGame();
+            round++;
+            updateStats();
+            state = 'waiting';
+            color = null;
+            setStim('wait', 'รอสัญญาณสี...', 'อย่าเพิ่งกด');
+            const delay = 1200 + Math.random() * 2600;
+            delayTimer = setTimeout(showColor, delay);
+        }
+
+        function showColor() {
+            color = Math.random() < 0.5 ? 'green' : 'red';
+            state = 'go';
+            setStim(color, '', '');
+            sfx.go();
+            goTime = performance.now();
+            timeoutTimer = setTimeout(() => {
+                if (state !== 'go') return;
+                state = 'between';
+                misses++;
+                sfx.bad();
+                lastVal.textContent = '--';
+                setStim('fail', 'ช้าเกินไป', `ไม่ได้กดภายใน ${TIMEOUT_MS / 1000} วินาที`);
+                nextTimer = setTimeout(nextRound, 1200);
+            }, TIMEOUT_MS);
+        }
+
+        function handleInput(dir) {
+            const btn = document.getElementById('btn-' + dir);
+            if (btn) {
+                btn.classList.add('press');
+                setTimeout(() => btn.classList.remove('press'), 100);
+            }
+
+            if (state === 'waiting') {
+                // false start: redo this round
+                clearTimeout(delayTimer);
+                state = 'between';
+                sfx.bad();
+                setStim('fail', 'กดเร็วเกินไป', 'รอให้สีขึ้นก่อน ลองรอบนี้ใหม่');
+                round--;
+                nextTimer = setTimeout(nextRound, 1200);
+                return;
+            }
+
+            if (state !== 'go') return;
+
+            const rt = Math.round(performance.now() - goTime);
+            clearTimeout(timeoutTimer);
+            state = 'between';
+
+            const expected = color === 'green' ? 'UP' : 'DOWN';
+            if (dir === expected) {
+                times.push(rt);
+                lastVal.textContent = rt + 'ms';
+                sfx.ok();
+                stim.className = 'stimulus ok';
+                stimText.className = 'ms';
+                stimText.textContent = rt + ' ms';
+                stimSub.textContent = 'ถูกต้อง';
+            } else {
+                misses++;
+                lastVal.textContent = '--';
+                sfx.bad();
+                setStim('fail', 'กดผิดปุ่ม', color === 'green' ? 'สีเขียวต้องกด ขึ้น' : 'สีแดงต้องกด ลง');
+            }
+            updateStats();
+            nextTimer = setTimeout(nextRound, 1000);
+        }
+
+        function rating(avg) {
+            if (avg < 250) return 'ไวมาก';
+            if (avg < 350) return 'ไวกว่าค่าเฉลี่ย';
+            if (avg < 500) return 'ปกติ';
+            return 'ลองฝึกอีกนิด';
+        }
+
+        function endGame() {
+            state = 'idle';
+            clearTimers();
+            sfx.end();
+
+            let html;
+            let title = 'เสร็จสิ้น';
+            if (times.length) {
+                const avg = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+                const isNew = saveBestAvg(avg);
+                if (isNew) title = 'สถิติใหม่';
+                const acc = Math.round((times.length / TOTAL_ROUNDS) * 100);
+                html = `
+                    เวลาตอบสนองเฉลี่ย<br>
+                    <span class="big-num">${avg} ms</span><br>
+                    <span style="color:var(--muted);">${rating(avg)} · เร็วสุด ${Math.min(...times)} ms · แม่นยำ ${acc}%${isNew ? '<br>บันทึกสถิติใหม่แล้ว' : ''}</span>`;
+            } else {
+                html = `ไม่มีรอบที่ตอบถูกเลย<br><span style="color:var(--muted);">ลองอีกครั้ง จำไว้ เขียว = ขึ้น, แดง = ลง</span>`;
+            }
+            overlayTitle.textContent = title;
+            overlayDesc.innerHTML = html;
+            startBtn.textContent = 'ทดสอบอีกครั้ง';
+            showBestRecord();
+            overlay.style.display = 'flex';
+        }
+
+        // --- events ---
+        startBtn.addEventListener('click', startGame);
+        ['UP', 'DOWN'].forEach(d => {
+            document.getElementById('btn-' + d).addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                handleInput(d);
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+            const k = e.key.toLowerCase();
+            if (state === 'idle') {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startGame(); }
+                return;
+            }
+            if (k === 'arrowup' || k === 'w') { e.preventDefault(); handleInput('UP'); }
+            else if (k === 'arrowdown' || k === 's') { e.preventDefault(); handleInput('DOWN'); }
+        });
+
+        soundBtn.addEventListener('click', () => {
+            muted = !muted;
+            soundIcon.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('muted', muted);
+        });
+
+        showBestRecord();
+    </script>
+</body>
+</html>
