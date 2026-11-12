@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pattern Recall - เกมจำลำดับ</title>
+    <title>Form Sequence - ลำดับกรอกฟอร์ม</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="nav.css">
+    <script src="theme.js"></script>
     <style>
         .board {
             display: grid;
@@ -66,40 +67,40 @@
 <body>
     <nav class="game-nav" style="--nav-max: 520px">
         <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
-        <div class="nav-brand">BRAIN ARCADE</div>
+        <div class="nav-brand">WORKDESK</div>
         <div class="nav-actions">
             <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
         </div>
     </nav>
 
     <div class="panel" style="--w: 520px">
-        <h1 class="title">Pattern Recall</h1>
-        <p class="subtitle">จำลำดับช่องที่สว่างขึ้น แล้วกดตามให้ถูกต้อง</p>
+        <h1 class="title">Form Sequence</h1>
+        <p class="subtitle">จำลำดับช่องที่ต้องกรอก แล้วกรอกตามให้ถูกต้อง</p>
 
         <div class="stats" style="--cols: 3">
-            <div><span class="stat-label">Level</span><span id="level-val" class="stat-value">1</span></div>
-            <div><span class="stat-label">Best</span><span id="best-val" class="stat-value">0</span></div>
-            <div><span class="stat-label">Streak</span><span id="streak-val" class="stat-value">0</span></div>
+            <div><span class="stat-label">ชุดที่</span><span id="level-val" class="stat-value">1</span></div>
+            <div><span class="stat-label">ดีที่สุด</span><span id="best-val" class="stat-value">0</span></div>
+            <div><span class="stat-label">ผ่านติดกัน</span><span id="streak-val" class="stat-value">0</span></div>
         </div>
 
-        <div id="status-badge" class="status">กด "เริ่มเกม" เพื่อท้าทายความจำ</div>
+        <div id="status-badge" class="status">กด "เริ่มงาน" เพื่อเริ่มกรอกข้อมูล</div>
 
         <div id="game-board" class="board"></div>
 
-        <button id="start-btn" class="btn"><i class="fa-solid fa-play"></i> เริ่มเกม</button>
+        <button id="start-btn" class="btn"><i class="fa-solid fa-play"></i> เริ่มงาน</button>
     </div>
 
     <div id="game-over-modal" class="modal-backdrop">
         <div class="modal">
             <div class="icon bad"><i class="fa-solid fa-xmark"></i></div>
-            <h2>จบเกม</h2>
-            <p>คุณกดผิดลำดับ ลองใหม่อีกครั้งได้เลย</p>
+            <h2>ลำดับไม่ถูกต้อง</h2>
+            <p>กรอกผิดลำดับ ลองทำชุดนี้ใหม่ได้เลย</p>
             <div class="result-row">
-                <div><span class="stat-label">ด่านที่ถึง</span><span id="final-level" class="num">1</span></div>
-                <div><span class="stat-label">สถิติสูงสุด</span><span id="final-best" class="num">1</span></div>
+                <div><span class="stat-label">ชุดที่ทำถึง</span><span id="final-level" class="num">1</span></div>
+                <div><span class="stat-label">ดีที่สุด</span><span id="final-best" class="num">1</span></div>
             </div>
             <div class="actions">
-                <button id="modal-restart" class="btn block"><i class="fa-solid fa-rotate-right"></i> ลองใหม่อีกครั้ง</button>
+                <button id="modal-restart" class="btn block"><i class="fa-solid fa-rotate-right"></i> ทำใหม่</button>
                 <a href="index.html" class="btn btn-ghost block">กลับหน้าหลัก</a>
             </div>
         </div>
@@ -166,7 +167,7 @@
         let highScore = parseInt(localStorage.getItem('pattern_recall_high_score')) || 0;
         let isPlayingSequence = false, isGameActive = false;
 
-        const tileIcons = ['fa-bolt', 'fa-gem', 'fa-fire', 'fa-star', 'fa-atom', 'fa-moon', 'fa-heart', 'fa-eye', 'fa-shield-halved'];
+        const tileIcons = ['fa-user', 'fa-envelope', 'fa-phone', 'fa-building', 'fa-calendar', 'fa-location-dot', 'fa-credit-card', 'fa-tag', 'fa-signature'];
 
         const board = document.getElementById('game-board');
         const levelEl = document.getElementById('level-val');
@@ -217,7 +218,7 @@
 
         async function playSequence() {
             isPlayingSequence = true;
-            setStatus('ตั้งใจจำลำดับ...', 'watch');
+            setStatus('ดูลำดับให้ดี...', 'watch');
             const speed = Math.max(220, 450 - level * 20);
             await new Promise(r => setTimeout(r, 600));
             for (let i = 0; i < sequence.length; i++) {
@@ -226,7 +227,7 @@
             }
             isPlayingSequence = false;
             playerStep = 0;
-            setStatus('ถึงตาคุณแล้ว กดตามลำดับ', 'go');
+            setStatus('ถึงตาคุณ กรอกตามลำดับ', 'go');
         }
 
         function nextRound() {
@@ -257,7 +258,7 @@
                 if (playerStep === sequence.length) {
                     isPlayingSequence = true;
                     audio.playWinRoundSound();
-                    setStatus('ถูกต้อง กำลังไปด่านถัดไป', 'watch');
+                    setStatus('ถูกต้อง กำลังไปชุดถัดไป', 'watch');
                     if (level > highScore) {
                         highScore = level;
                         localStorage.setItem('pattern_recall_high_score', highScore);
@@ -275,13 +276,13 @@
             isGameActive = false;
             audio.playFailSound();
             board.classList.add('shake');
-            setStatus('กดผิด จบเกมแล้ว', 'fail');
+            setStatus('ลำดับผิด', 'fail');
             setTimeout(() => board.classList.remove('shake'), 500);
 
             finalLevelEl.textContent = level;
             finalBestEl.textContent = highScore;
             startBtn.classList.remove('disabled');
-            startBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> เล่นอีกครั้ง';
+            startBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> ทำอีกครั้ง';
             setTimeout(() => modal.classList.add('open'), 450);
         }
 

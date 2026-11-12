@@ -1,4 +1,4 @@
-/* Brain Arcade — shared minimal theme
+/* Workdesk — shared minimal theme
    Used by every page: tokens, nav bar, panel, stats, buttons, modal.
    Light by default, follows the system dark mode automatically. */
 
@@ -259,9 +259,166 @@ button { font-family: inherit; }
     color: var(--muted);
 }
 
+/* ---------- Settings menu (theme switcher) ---------- */
+.game-nav .nav-actions { position: relative; }
+
+.settings-menu {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 250px;
+    z-index: 60;
+    display: none;
+    padding: 8px;
+    text-align: left;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+}
+.settings-menu.open { display: block; }
+.settings-menu h4 {
+    padding: 6px 10px 8px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+
+.theme-opt {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    margin-bottom: 4px;
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.theme-opt:last-child { margin-bottom: 0; }
+.theme-opt:hover { background: var(--bg-soft); }
+.theme-opt.on { background: var(--accent-soft); border-color: var(--accent); }
+.theme-opt b { font-weight: 600; }
+.theme-opt small { display: block; margin-top: 1px; font-size: 0.72rem; font-weight: 300; color: var(--muted); }
+.theme-opt .sw { display: flex; gap: 3px; flex-shrink: 0; }
+.theme-opt .sw i { width: 10px; height: 26px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, 0.08); }
+.theme-opt .tick { margin-left: auto; color: var(--accent); visibility: hidden; }
+.theme-opt.on .tick { visibility: visible; }
+
+/* =====================================================
+   OFFICE THEME — Microsoft Office–style palette
+   Blue title bar, light grey canvas, squarer corners.
+   ===================================================== */
+:root[data-theme="office"] {
+    --bg: #f3f2f1;
+    --bg-soft: #edebe9;
+    --surface: #ffffff;
+    --line: #e1dfdd;
+    --ink: #323130;
+    --muted: #605e5c;
+    --accent: #2b579a;
+    --accent-soft: #deecf9;
+    --on-accent: #ffffff;
+    --good: #107c10;
+    --good-soft: #dff6dd;
+    --bad: #d13438;
+    --bad-soft: #fde7e9;
+    --warn: #c19c00;
+    --nav-bg: #2b579a;
+    --shadow: 0 1.6px 3.6px rgba(0, 0, 0, 0.13), 0 0.3px 0.9px rgba(0, 0, 0, 0.11);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root[data-theme="office"] {
+        --bg: #1b1a19;
+        --bg-soft: #252423;
+        --surface: #292827;
+        --line: #3b3a39;
+        --ink: #f3f2f1;
+        --muted: #a19f9d;
+        --accent: #6ea8e8;
+        --accent-soft: #1f3248;
+        --on-accent: #0f1a28;
+        --good: #6bb700;
+        --good-soft: #1f2d17;
+        --bad: #f1707b;
+        --bad-soft: #3a1f22;
+        --warn: #e5c04d;
+        --nav-bg: #2b579a;
+        --shadow: 0 1.6px 3.6px rgba(0, 0, 0, 0.4), 0 0.3px 0.9px rgba(0, 0, 0, 0.3);
+    }
+}
+
+:root[data-theme="office"] body {
+    font-family: 'Segoe UI', 'Prompt', system-ui, -apple-system, sans-serif;
+}
+
+/* squarer shapes */
+:root[data-theme="office"] .panel,
+:root[data-theme="office"] .modal,
+:root[data-theme="office"] .game-card,
+:root[data-theme="office"] .overlay,
+:root[data-theme="office"] .settings-menu { border-radius: 8px; }
+
+:root[data-theme="office"] .stats,
+:root[data-theme="office"] .result-row,
+:root[data-theme="office"] .best,
+:root[data-theme="office"] .rules-box,
+:root[data-theme="office"] .arena,
+:root[data-theme="office"] .stimulus,
+:root[data-theme="office"] .theme-opt { border-radius: 6px; }
+
+:root[data-theme="office"] .btn,
+:root[data-theme="office"] .tile,
+:root[data-theme="office"] .card-front,
+:root[data-theme="office"] .card-back,
+:root[data-theme="office"] .pad-btn,
+:root[data-theme="office"] .dir-btn,
+:root[data-theme="office"] .field input,
+:root[data-theme="office"] .alert,
+:root[data-theme="office"] .card-icon,
+:root[data-theme="office"] .user-btn { border-radius: 4px; }
+
+:root[data-theme="office"] .chip,
+:root[data-theme="office"] .status,
+:root[data-theme="office"] .protocol-badge { border-radius: 4px; }
+
+:root[data-theme="office"] .btn-ghost { border-color: #8a8886; }
+:root[data-theme="office"] .title { font-weight: 600; letter-spacing: 0; }
+
+/* blue title-bar style nav */
+:root[data-theme="office"] .game-nav {
+    background: var(--nav-bg);
+    border-color: var(--nav-bg);
+    border-radius: 6px;
+}
+:root[data-theme="office"] .game-nav .nav-back,
+:root[data-theme="office"] .game-nav .nav-brand,
+:root[data-theme="office"] .hub-nav .nav-brand,
+:root[data-theme="office"] .game-nav .nav-icon-btn { color: #ffffff; }
+:root[data-theme="office"] .game-nav .nav-brand { letter-spacing: 0.14em; }
+:root[data-theme="office"] .game-nav .nav-back:hover,
+:root[data-theme="office"] .game-nav .nav-icon-btn:hover { background: rgba(255, 255, 255, 0.16); color: #ffffff; }
+:root[data-theme="office"] .game-nav .nav-icon-btn.muted { color: #ffd0d3; }
+:root[data-theme="office"] .game-nav .nav-brand i { color: #ffffff !important; }
+:root[data-theme="office"] .game-nav .user-btn { background: rgba(255, 255, 255, 0.16); color: #ffffff; }
+:root[data-theme="office"] .game-nav .user-btn:hover { background: rgba(255, 255, 255, 0.26); }
+:root[data-theme="office"] .game-nav .user-btn i { color: #ffffff !important; }
+:root[data-theme="office"] .game-nav .user-btn.primary { background: #ffffff; color: var(--nav-bg); }
+:root[data-theme="office"] .game-nav .user-btn.primary i { color: var(--nav-bg) !important; }
+
 @media (max-width: 480px) {
     .game-nav { padding: 6px 8px; gap: 6px; }
     .game-nav .nav-back span { display: none; }
     .game-nav .nav-back { padding: 0; width: 40px; justify-content: center; }
     .panel { padding: 22px 16px; }
+    .settings-menu { width: 230px; }
 }

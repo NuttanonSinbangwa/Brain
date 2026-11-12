@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reflex - ทดสอบเวลาตอบสนอง</title>
+    <title>Approval Queue - คิวอนุมัติ</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="nav.css">
+    <script src="theme.js"></script>
     <style>
         .stimulus {
             height: 190px;
@@ -116,48 +117,48 @@
 <body>
     <nav class="game-nav" style="--nav-max: 520px">
         <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
-        <div class="nav-brand">BRAIN ARCADE</div>
+        <div class="nav-brand">WORKDESK</div>
         <div class="nav-actions">
             <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
         </div>
     </nav>
 
     <div class="panel" style="--w: 520px">
-        <h1 class="title">Reflex</h1>
-        <p class="subtitle">ทดสอบเวลาตอบสนองต่อสี</p>
+        <h1 class="title">Approval Queue</h1>
+        <p class="subtitle">ตรวจสถานะคำขอและตัดสินใจให้เร็วที่สุด</p>
 
         <div class="stats" style="--cols: 4">
-            <div><span class="stat-label">Round</span><span id="round-val" class="stat-value">0/10</span></div>
-            <div><span class="stat-label">Last</span><span id="last-val" class="stat-value">--</span></div>
-            <div><span class="stat-label">Avg</span><span id="avg-val" class="stat-value">--</span></div>
-            <div><span class="stat-label">Best</span><span id="best-val" class="stat-value">--</span></div>
+            <div><span class="stat-label">คำขอที่</span><span id="round-val" class="stat-value">0/10</span></div>
+            <div><span class="stat-label">ล่าสุด</span><span id="last-val" class="stat-value">--</span></div>
+            <div><span class="stat-label">เฉลี่ย</span><span id="avg-val" class="stat-value">--</span></div>
+            <div><span class="stat-label">เร็วสุด</span><span id="best-val" class="stat-value">--</span></div>
         </div>
 
         <div id="stimulus" class="stimulus wait">
-            <div class="big" id="stim-text">พร้อมแล้วกดเริ่ม</div>
+            <div class="big" id="stim-text">พร้อมรับคำขอ กดเริ่มงาน</div>
             <div class="small" id="stim-sub"></div>
         </div>
 
         <div class="legend">
-            <span><i class="dot g"></i>เขียว = กดขึ้น</span>
-            <span><i class="dot r"></i>แดง = กดลง</span>
+            <span><i class="dot g"></i>เขียว = อนุมัติ (ขึ้น)</span>
+            <span><i class="dot r"></i>แดง = ส่งกลับ (ลง)</span>
         </div>
 
         <div class="pad">
-            <button class="pad-btn" id="btn-UP"><i class="fa-solid fa-arrow-up"></i>ขึ้น<span>W / ↑</span></button>
-            <button class="pad-btn" id="btn-DOWN"><i class="fa-solid fa-arrow-down"></i>ลง<span>S / ↓</span></button>
+            <button class="pad-btn" id="btn-UP"><i class="fa-solid fa-arrow-up"></i>อนุมัติ<span>W / ↑</span></button>
+            <button class="pad-btn" id="btn-DOWN"><i class="fa-solid fa-arrow-down"></i>ส่งกลับ<span>S / ↓</span></button>
         </div>
 
         <div class="overlay" id="overlay">
-            <h2 id="overlay-title">Reflex</h2>
-            <div class="best-record" id="best-record">BEST AVG: --</div>
+            <h2 id="overlay-title">Approval Queue</h2>
+            <div class="best-record" id="best-record">เฉลี่ยดีที่สุด: --</div>
             <div class="rules-box" id="overlay-desc">
-                ทดสอบ 10 รอบ รอให้หน้าจอเปลี่ยนสีแล้วกดให้เร็วที่สุด<br><br>
-                <span class="g-txt">เขียว</span> · กดปุ่ม <b>ขึ้น</b><br>
-                <span class="r-txt">แดง</span> · กดปุ่ม <b>ลง</b><br><br>
-                กดก่อนสีขึ้นหรือกดผิดปุ่มจะไม่นับเวลา รองรับ W S, ↑ ↓ หรือแตะปุ่ม
+                ตรวจคำขอ 10 รายการ เมื่อสถานะเปลี่ยนสีให้ดำเนินการให้เร็วที่สุด<br><br>
+                <span class="g-txt">เขียว</span> · <b>อนุมัติ</b> (ปุ่มขึ้น)<br>
+                <span class="r-txt">แดง</span> · <b>ส่งกลับ</b> (ปุ่มลง)<br><br>
+                ดำเนินการก่อนสถานะขึ้นหรือเลือกผิดจะไม่นับเวลา รองรับ W S, ↑ ↓ หรือแตะปุ่ม
             </div>
-            <button class="btn" id="start-btn">เริ่มทดสอบ</button>
+            <button class="btn" id="start-btn">เริ่มงาน</button>
         </div>
     </div>
 
@@ -234,7 +235,7 @@
         }
         function showBestRecord() {
             const b = getBestAvg();
-            bestRecord.textContent = `BEST AVG: ${b ? b + ' ms' : '--'}`;
+            bestRecord.textContent = `เฉลี่ยดีที่สุด: ${b ? b + ' ms' : '--'}`;
         }
 
         // --- UI helpers ---
@@ -277,7 +278,7 @@
             updateStats();
             state = 'waiting';
             color = null;
-            setStim('wait', 'รอสัญญาณสี...', 'อย่าเพิ่งกด');
+            setStim('wait', 'รอคำขอถัดไป...', 'ยังไม่ต้องดำเนินการ');
             const delay = 1200 + Math.random() * 2600;
             delayTimer = setTimeout(showColor, delay);
         }
@@ -294,7 +295,7 @@
                 misses++;
                 sfx.bad();
                 lastVal.textContent = '--';
-                setStim('fail', 'ช้าเกินไป', `ไม่ได้กดภายใน ${TIMEOUT_MS / 1000} วินาที`);
+                setStim('fail', 'เกินเวลา', `ไม่ได้ดำเนินการภายใน ${TIMEOUT_MS / 1000} วินาที`);
                 nextTimer = setTimeout(nextRound, 1200);
             }, TIMEOUT_MS);
         }
@@ -311,7 +312,7 @@
                 clearTimeout(delayTimer);
                 state = 'between';
                 sfx.bad();
-                setStim('fail', 'กดเร็วเกินไป', 'รอให้สีขึ้นก่อน ลองรอบนี้ใหม่');
+                setStim('fail', 'ดำเนินการเร็วเกินไป', 'รอให้สถานะขึ้นก่อน ลองรายการนี้ใหม่');
                 round--;
                 nextTimer = setTimeout(nextRound, 1200);
                 return;
@@ -336,7 +337,7 @@
                 misses++;
                 lastVal.textContent = '--';
                 sfx.bad();
-                setStim('fail', 'กดผิดปุ่ม', color === 'green' ? 'สีเขียวต้องกด ขึ้น' : 'สีแดงต้องกด ลง');
+                setStim('fail', 'เลือกผิด', color === 'green' ? 'สีเขียวต้องอนุมัติ' : 'สีแดงต้องส่งกลับ');
             }
             updateStats();
             nextTimer = setTimeout(nextRound, 1000);
@@ -359,18 +360,18 @@
             if (times.length) {
                 const avg = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
                 const isNew = saveBestAvg(avg);
-                if (isNew) title = 'สถิติใหม่';
+                if (isNew) title = 'ผลดีที่สุดใหม่';
                 const acc = Math.round((times.length / TOTAL_ROUNDS) * 100);
                 html = `
-                    เวลาตอบสนองเฉลี่ย<br>
+                    เวลาดำเนินการเฉลี่ย<br>
                     <span class="big-num">${avg} ms</span><br>
-                    <span style="color:var(--muted);">${rating(avg)} · เร็วสุด ${Math.min(...times)} ms · แม่นยำ ${acc}%${isNew ? '<br>บันทึกสถิติใหม่แล้ว' : ''}</span>`;
+                    <span style="color:var(--muted);">${rating(avg)} · เร็วสุด ${Math.min(...times)} ms · แม่นยำ ${acc}%${isNew ? '<br>บันทึกผลดีที่สุดใหม่แล้ว' : ''}</span>`;
             } else {
-                html = `ไม่มีรอบที่ตอบถูกเลย<br><span style="color:var(--muted);">ลองอีกครั้ง จำไว้ เขียว = ขึ้น, แดง = ลง</span>`;
+                html = `ไม่มีรายการที่ดำเนินการถูกต้อง<br><span style="color:var(--muted);">ลองอีกครั้ง จำไว้ เขียว = อนุมัติ, แดง = ส่งกลับ</span>`;
             }
             overlayTitle.textContent = title;
             overlayDesc.innerHTML = html;
-            startBtn.textContent = 'ทดสอบอีกครั้ง';
+            startBtn.textContent = 'ทำอีกรอบ';
             showBestRecord();
             overlay.style.display = 'flex';
         }

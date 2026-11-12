@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arrow Override - เกมลูกศรสลับโหมด</title>
+    <title>Routing Desk - จัดเส้นทางงาน</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="nav.css">
+    <script src="theme.js"></script>
     <style>
         .arena {
             background: var(--bg-soft);
@@ -135,24 +136,24 @@
 <body>
     <nav class="game-nav" style="--nav-max: 540px">
         <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
-        <div class="nav-brand">BRAIN ARCADE</div>
+        <div class="nav-brand">WORKDESK</div>
         <div class="nav-actions">
             <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
         </div>
     </nav>
 
     <div class="panel" style="--w: 540px">
-        <h1 class="title">Arrow Override</h1>
-        <p class="subtitle">กดทิศทางตามกติกาของโหมด ทั้งตรงและสวนทาง</p>
+        <h1 class="title">Routing Desk</h1>
+        <p class="subtitle">ส่งงานไปยังทิศทางที่ถูกต้องตามกฎของแต่ละรายการ</p>
 
         <div class="stats" style="--cols: 3">
-            <div><span class="stat-label">Time</span><span class="stat-value" id="timer-val">45.0s</span></div>
-            <div><span class="stat-label">Score</span><span class="stat-value" id="score-val">0</span></div>
-            <div><span class="stat-label">Combo</span><span class="stat-value" id="combo-val">x1</span></div>
+            <div><span class="stat-label">เวลา</span><span class="stat-value" id="timer-val">45.0s</span></div>
+            <div><span class="stat-label">งานเสร็จ</span><span class="stat-value" id="score-val">0</span></div>
+            <div><span class="stat-label">ต่อเนื่อง</span><span class="stat-value" id="combo-val">x1</span></div>
         </div>
 
         <div class="arena" id="signal-arena">
-            <div class="protocol-badge" id="protocol-badge">DIRECT · กดตามลูกศร</div>
+            <div class="protocol-badge" id="protocol-badge">ตามเส้นทาง · ส่งตามลูกศร</div>
             <div class="arrow-display" id="arrow-display">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 19V5M5 12l7-7 7 7"/>
@@ -180,15 +181,15 @@
         </div>
 
         <div class="overlay" id="overlay">
-            <h2 id="overlay-title">Arrow Override</h2>
-            <div class="best-record" id="best-record">HIGH SCORE: 0</div>
+            <h2 id="overlay-title">Routing Desk</h2>
+            <div class="best-record" id="best-record">ผลดีที่สุด: 0</div>
             <div class="rules-box" id="overlay-desc">
-                ดูป้ายโหมดด้านบนก่อนกด ภายในเวลา 45 วินาที<br><br>
-                <span class="tag-direct">DIRECT</span> · กดปุ่ม <strong>ตามทิศ</strong> ที่ลูกศรชี้<br>
-                <span class="tag-reverse">REVERSE</span> · กดปุ่ม <strong>ตรงข้าม</strong> กับลูกศร<br><br>
+                ดูป้ายกฎด้านบนก่อนส่งงาน ภายในเวลา 45 วินาที<br><br>
+                <span class="tag-direct">ตามเส้นทาง</span> · ส่งไป <strong>ตามทิศ</strong> ที่ลูกศรชี้<br>
+                <span class="tag-reverse">ย้อนเส้นทาง</span> · ส่งไป <strong>ตรงข้าม</strong> กับลูกศร<br><br>
                 รองรับปุ่มลูกศร, W A S D หรือแตะบนหน้าจอ
             </div>
-            <button class="btn" id="start-btn" onclick="startGame()">เริ่มเกม</button>
+            <button class="btn" id="start-btn" onclick="startGame()">เริ่มงาน</button>
         </div>
     </div>
 
@@ -260,7 +261,7 @@
         function loadHighScore() {
             const scores = JSON.parse(localStorage.getItem('arcade_override_scores') || '{}');
             const best = scores[getUser().username] || 0;
-            bestRecord.textContent = `HIGH SCORE: ${best}`;
+            bestRecord.textContent = `ผลดีที่สุด: ${best}`;
             return best;
         }
 
@@ -303,10 +304,10 @@
 
             if (currentMode === 'DIRECT') {
                 arena.className = 'arena';
-                protocolBadge.textContent = 'DIRECT · กดตามลูกศร';
+                protocolBadge.textContent = 'ตามเส้นทาง · ส่งตามลูกศร';
             } else {
                 arena.className = 'arena mode-reverse';
-                protocolBadge.textContent = 'REVERSE · กดสวนทาง';
+                protocolBadge.textContent = 'ย้อนเส้นทาง · ส่งสวนทาง';
             }
 
             arrowDisplay.style.transform = `scale(0.85) ${ROTATIONS[currentArrow]}`;
@@ -355,13 +356,13 @@
             const isNewRecord = saveHighScore(score);
             loadHighScore();
 
-            overlayTitle.textContent = isNewRecord ? 'สถิติใหม่' : 'หมดเวลา';
+            overlayTitle.textContent = isNewRecord ? 'ผลดีที่สุดใหม่' : 'หมดเวลา';
             overlayDesc.innerHTML = `
-                คะแนนรวมของคุณ<br>
+                งานที่เสร็จรวม<br>
                 <strong style="font-size:1.6rem;font-weight:600;">${score}</strong><br>
-                <span style="color:var(--muted);">${isNewRecord ? 'บันทึกสถิติสูงสุดใหม่แล้ว' : 'ลองอีกครั้งเพื่อทำลายสถิติ'}</span>
+                <span style="color:var(--muted);">${isNewRecord ? 'บันทึกผลดีที่สุดใหม่แล้ว' : 'ลองอีกครั้งเพื่อทำให้ดีขึ้น'}</span>
             `;
-            startBtn.textContent = 'เล่นอีกครั้ง';
+            startBtn.textContent = 'ทำอีกรอบ';
             overlay.style.display = 'flex';
         }
 

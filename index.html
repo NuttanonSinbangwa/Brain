@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brain Arcade</title>
+    <title>Workdesk</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="nav.css">
+    <script src="theme.js"></script>
     <style>
         .hub-nav { grid-template-columns: 1fr auto; }
         .hub-nav .nav-brand { color: var(--ink); font-size: 0.9rem; }
@@ -146,7 +147,7 @@
 <body>
 
     <nav class="game-nav hub-nav" style="--nav-max: 880px">
-        <div class="nav-brand" style="justify-self:start; padding-left:8px;"><i class="fa-solid fa-brain" style="margin-right:8px;color:var(--accent)"></i>BRAIN ARCADE</div>
+        <div class="nav-brand" style="justify-self:start; padding-left:8px;"><i class="fa-solid fa-briefcase" style="margin-right:8px;color:var(--accent)"></i>WORKDESK</div>
         <div class="nav-actions">
             <div id="user-bar" style="display:flex;align-items:center;gap:6px;"></div>
             <button id="sound-toggle-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
@@ -154,8 +155,8 @@
     </nav>
 
     <div class="hero">
-        <h1>Arcade Game Hub</h1>
-        <p>เลือกเกมที่อยากเล่น ฝึกความจำและปฏิกิริยา แล้วทำลายสถิติของตัวเอง</p>
+        <h1>งานวันนี้</h1>
+        <p>เลือกงานที่ต้องการทำ ฝึกความจำ สมาธิ และความไวในการตัดสินใจ พร้อมติดตามผลงานของตัวเอง</p>
     </div>
 
     <main class="games">
@@ -163,60 +164,60 @@
         <div class="game-card">
             <div>
                 <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-brain"></i></div>
-                    <span class="chip">ความจำระยะสั้น</span>
+                    <div class="card-icon"><i class="fa-solid fa-folder-open"></i></div>
+                    <span class="chip">เอกสาร</span>
                 </div>
-                <h2>Memory Cards</h2>
-                <p>เปิดการ์ดและจับคู่ภาพที่เหมือนกัน ใช้เวลาและจำนวนครั้งให้น้อยที่สุด</p>
+                <h2>Document Match</h2>
+                <p>เปิดเอกสารและจับคู่รายการที่ตรงกัน ให้ครบด้วยเวลาและจำนวนครั้งน้อยที่สุด</p>
             </div>
             <div>
                 <div class="best"><span>เวลาดีที่สุด</span><b id="best-memory-time">--:--</b></div>
-                <a href="memory.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เล่นเกมนี้</a>
+                <a href="memory.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
             </div>
         </div>
 
         <div class="game-card">
             <div>
                 <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-grip"></i></div>
-                    <span class="chip">ความจำลำดับ</span>
+                    <div class="card-icon"><i class="fa-solid fa-pen-to-square"></i></div>
+                    <span class="chip">ฟอร์ม</span>
                 </div>
-                <h2>Pattern Recall</h2>
-                <p>จำลำดับช่องที่สว่างบนกริด แล้วกดตามให้ถูกต้อง ลำดับสุ่มใหม่ทุกด่าน</p>
+                <h2>Form Sequence</h2>
+                <p>จำลำดับช่องที่ต้องกรอก แล้วกรอกตามให้ถูกต้อง ลำดับสุ่มใหม่ทุกชุด</p>
             </div>
             <div>
-                <div class="best"><span>ด่านสูงสุด</span><b id="best-pattern-level">0</b></div>
-                <a href="pattern.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เล่นเกมนี้</a>
+                <div class="best"><span>ชุดสูงสุด</span><b id="best-pattern-level">0</b></div>
+                <a href="pattern.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
             </div>
         </div>
 
         <div class="game-card">
             <div>
                 <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-bolt"></i></div>
-                    <span class="chip">ความเร็ว</span>
+                    <div class="card-icon"><i class="fa-solid fa-clipboard-check"></i></div>
+                    <span class="chip">ตัดสินใจ</span>
                 </div>
-                <h2>Reflex</h2>
-                <p>เห็นสีเขียวกดขึ้น เห็นสีแดงกดลง วัดเวลาตอบสนองของคุณเป็นมิลลิวินาที</p>
+                <h2>Approval Queue</h2>
+                <p>เห็นสถานะเขียวให้อนุมัติ เห็นสีแดงให้ส่งกลับ ยิ่งตัดสินใจเร็วยิ่งดี</p>
             </div>
             <div>
                 <div class="best"><span>เฉลี่ยดีที่สุด</span><b id="best-reflex-score">-- ms</b></div>
-                <a href="reflex.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เล่นเกมนี้</a>
+                <a href="reflex.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
             </div>
         </div>
 
         <div class="game-card">
             <div>
                 <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-arrows-up-down-left-right"></i></div>
-                    <span class="chip">สมาธิ &amp; ทิศทาง</span>
+                    <div class="card-icon"><i class="fa-solid fa-route"></i></div>
+                    <span class="chip">จัดการงาน</span>
                 </div>
-                <h2>Arrow Override</h2>
-                <p>กดทิศทางตามลูกศร หรือสวนทางเมื่อโหมดเปลี่ยน ยิ่งต่อเนื่องคะแนนยิ่งคูณ</p>
+                <h2>Routing Desk</h2>
+                <p>ส่งงานไปตามทิศ หรือสวนทางเมื่อกฎเปลี่ยน ยิ่งต่อเนื่องผลงานยิ่งคูณ</p>
             </div>
             <div>
-                <div class="best"><span>คะแนนสูงสุด</span><b id="best-arrow-score">0</b></div>
-                <a href="arrow.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เล่นเกมนี้</a>
+                <div class="best"><span>ผลดีที่สุด</span><b id="best-arrow-score">0</b></div>
+                <a href="arrow.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
             </div>
         </div>
 
@@ -248,8 +249,8 @@
                     <input type="password" id="auth-confirm-password" placeholder="กรอกรหัสผ่านอีกครั้ง">
                 </div>
                 <div id="display-name-group" class="field hidden">
-                    <label>ชื่อที่แสดงในเกม</label>
-                    <input type="text" id="auth-displayname" placeholder="เช่น Player99">
+                    <label>ชื่อที่แสดง</label>
+                    <input type="text" id="auth-displayname" placeholder="เช่น Somchai">
                 </div>
                 <button type="submit" id="auth-submit-btn" class="btn block" style="margin-top:6px;">เข้าสู่ระบบ</button>
             </form>
@@ -266,7 +267,7 @@
                 <input type="text" id="profile-username" disabled>
             </div>
             <div class="field">
-                <label>ชื่อที่ใช้ในเกม</label>
+                <label>ชื่อที่แสดง</label>
                 <input type="text" id="profile-displayname">
             </div>
             <button onclick="saveProfile()" class="btn block">บันทึกข้อมูล</button>
