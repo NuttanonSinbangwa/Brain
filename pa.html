@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peripheral Scan - Visual Matrix Benchmark</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #06080f;
+            --panel-bg: rgba(12, 18, 32, 0.92);
+            --primary: #00f3ff;
+            --accent: #ff0055;
+            --success: #00ff66;
+            --warning: #ffd000;
+            --text-main: #e0f7fa;
+            --text-muted: #5c768d;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(0, 243, 255, 0.08) 0%, transparent 60%),
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 24px 24px, 24px 24px;
+            color: var(--text-main);
+            font-family: 'Prompt', 'Kanit', system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            z-index: 100;
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 243, 255, 0.15);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 520px;
+            background: var(--panel-bg);
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            border-radius: 14px;
+            box-shadow: 0 0 40px rgba(0, 243, 255, 0.12), inset 0 0 20px rgba(0, 243, 255, 0.05);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+            padding-bottom: 12px;
+        }
+
+        .header h1 {
+            font-family: 'Prompt', 'Kanit', system-ui, sans-serif;
+            font-weight: 900;
+            font-size: 1.55rem;
+            letter-spacing: 2px;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        .header p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Mode Switcher */
+        .mode-bar {
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 243, 255, 0.15);
+        }
+
+        .mode-btn {
+            flex: 1;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            padding: 8px;
+            font-family: 'Prompt', 'Kanit', system-ui, sans-serif;
+            font-size: 0.78rem;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: rgba(0, 243, 255, 0.15);
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+        }
+
+        .mode-btn.active.glitch-mode {
+            background: rgba(255, 0, 85, 0.15);
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.25);
+        }
+
+        /* HUD Stats */
+        .hud {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(0, 243, 255, 0.15);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .hud-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        .hud-value {
+            font-family: 'Prompt', 'Kanit', system-ui, sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        #target-val { color: var(--success); }
+        #timer-val { color: var(--warning); }
+        #best-val { color: var(--primary); }
+
+        /* 5x5 Matrix Grid */
+        .matrix-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            max-width: 420px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.65);
+            border: 2px solid rgba(0, 243, 255, 0.3);
+            border-radius: 12px;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        /* Subtle Center Focus Crosshair */
+        .center-focus {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 14px;
+            height: 14px;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.35;
+        }
+        .center-focus::before, .center-focus::after {
+            content: '';
+            position: absolute;
+            background: var(--accent);
+        }
+        .center-focus::before { top: 6px; left: 0; width: 14px; height: 2px; }
+        .center-focus::after { top: 0; left: 6px; width: 2px; height: 14px; }
+
+        .cell {
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid rgba(0, 243, 255, 0.25);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Prompt', 'Kanit', system-ui, sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: background 0.12s, transform 0.1s, border-color 0.15s;
+        }
+
+        .cell:hover:not(.cleared) {
+            background: rgba(0, 243, 255, 0.18);
+            border-color: var(--primary);
+            box-shadow: 0 0 12px rgba(0, 243, 255, 0.3);
+        }
+
+        .cell:active:not(.cleared) {
+            transform: scale(0.92);
+        }
+
+        .cell.cleared {
+            background: rgba(0, 255, 102, 0.06);
+            border-color: rgba(0, 255, 102, 0.15);
+            color: rgba(0, 255, 102, 0.25);
+            cursor: default;
+        }
+
+        .cell.wrong-flash {
+            background: rgba(255, 0, 85, 0.35) !important;
+            border-color: var(--accent) !important;
+            color: #fff !important;
+            animation: shake 0.25s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        .footer-tip {
+            text-align: center;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        /* Overlay Screen */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(6, 8, 15, 0.95);
+            backdrop-filter: blur(4px);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px;
+            text-align: center;
+            z-index: 20;
+            gap: 15px;
+        }
+
+        .overlay h2 {
+            font-family: 'Prompt', 'Kanit', system-ui, sans-serif;
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .rules-box {
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 0.86rem;
+            line-height: 1.6;
+            text-align: left;
+            color: var(--text-main);
+        }
+
+        .start-btn {
+            background: var(--primary);
+            color: var(--bg-color);
+            border: none;
+            padding: 12px 32px;
+            font-family: 'Prompt', 'Kanit', system-ui, sans-serif;
+            font-weight: 900;
+            font-size: 0.95rem;
+            border-radius: 6px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+            transition: all 0.2s;
+            margin-top: 4px;
+        }
+
+        .start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        หน้าหลัก
+    </a>
+
+    <div class="game-container">
+        <div class="header">
+            <h1>PERIPHERAL SCAN</h1>
+            <p>วัดความไวในการกวาดสายตาและประมวลผลภาพมุมกว้าง (01 → 25)</p>
+        </div>
+
+        <div class="mode-bar">
+            <button class="mode-btn active" id="btn-mode-std" onclick="setMode('STD')">STANDARD (นิ่ง)</button>
+            <button class="mode-btn" id="btn-mode-glitch" onclick="setMode('GLITCH')">GLITCH SHIFT (สลับตำแหน่ง)</button>
+        </div>
+
+        <div class="hud">
+            <div>
+                <div class="hud-label">NEXT TARGET</div>
+                <div class="hud-value" id="target-val">01</div>
+            </div>
+            <div>
+                <div class="hud-label">ELAPSED TIME</div>
+                <div class="hud-value" id="timer-val">0.00s</div>
+            </div>
+            <div>
+                <div class="hud-label">BEST RECORD</div>
+                <div class="hud-value" id="best-val">--</div>
+            </div>
+        </div>
+
+        <div class="matrix-wrapper" id="matrix-grid">
+            <div class="center-focus"></div>
+        </div>
+
+        <div class="footer-tip" id="footer-tip">
+            เทคนิค: จ้องจุดกึ่งกลาง (+) แล้วใช้หางตากวาดหาตัวเลขพร้อมกันทั้งตาราง
+        </div>
+
+        <!-- Overlay Screen -->
+        <div class="overlay" id="overlay">
+            <h2 id="overlay-title">VISUAL MATRIX SCAN</h2>
+            <div class="rules-box" id="overlay-desc">
+                ทดสอบความเร็วในการกวาดสายตาหาข้อมูลบนตาราง 5x5:<br><br>
+                🔹 กดไล่ลำดับตัวเลขตั้งแต่ <strong>01 ไปจนถึง 25</strong> ให้เร็วที่สุด<br>
+                🔸 หากกดผิดตัว จะโดนบวกเวลาเพิ่ม <strong>+1.50 วินาที</strong><br>
+                ⚡ <strong>โหมด GLITCH SHIFT:</strong> ทุกๆ 5 ตัวเลข ตารางจะสุ่มสลับตำแหน่งใหม่!
+            </div>
+            <button class="start-btn" id="start-btn" onclick="startGame()">เริ่มสแกนตาราง</button>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'STD'; // 'STD' หรือ 'GLITCH'
+        let nextNumber = 1;
+        let numbersArray = [];
+        let startTime = 0;
+        let penaltyTime = 0;
+        let timerInterval = null;
+        let isPlaying = false;
+
+        const matrixGrid = document.getElementById('matrix-grid');
+        const targetVal = document.getElementById('target-val');
+        const timerVal = document.getElementById('timer-val');
+        const bestVal = document.getElementById('best-val');
+        const overlay = document.getElementById('overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayDesc = document.getElementById('overlay-desc');
+        const startBtn = document.getElementById('start-btn');
+
+        // Web Audio API
+        let audioCtx = null;
+        function playSound(type) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'hit') {
+                    osc.type = 'sine';
+                    const freq = 420 + (nextNumber * 18);
+                    osc.frequency.setValueAtTime(freq, now);
+                    gain.gain.setValueAtTime(0.07, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+                    osc.start(now);
+                    osc.stop(now + 0.06);
+                } else if (type === 'shift') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.linearRampToValueAtTime(600, now + 0.12);
+                    gain.gain.setValueAtTime(0.09, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'miss') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(140, now);
+                    osc.frequency.linearRampToValueAtTime(75, now + 0.18);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                    osc.start(now);
+                    osc.stop(now + 0.18);
+                } else if (type === 'win') {
+                    [523.25, 659.25, 783.99, 1046.50].forEach((f, idx) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.frequency.setValueAtTime(f, now + idx * 0.08);
+                        g.gain.setValueAtTime(0.1, now + idx * 0.08);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.18);
+                        o.start(now + idx * 0.08);
+                        o.stop(now + idx * 0.08 + 0.18);
+                    });
+                }
+            } catch (e) {}
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('btn-mode-std').className = mode === 'STD' ? 'mode-btn active' : 'mode-btn';
+            document.getElementById('btn-mode-glitch').className = mode === 'GLITCH' ? 'mode-btn active glitch-mode' : 'mode-btn';
+            loadBestTime();
+            if (isPlaying) startGame();
+        }
+
+        function loadBestTime() {
+            const user = JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' };
+            const scores = JSON.parse(localStorage.getItem('arcade_scan_scores') || '{}');
+            const key = `${user.username}_${currentMode}`;
+            const best = scores[key];
+            bestVal.textContent = best ? `${best.toFixed(2)}s` : '--';
+            return best || null;
+        }
+
+        function saveBestTime(finalSeconds) {
+            const user = JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' };
+            const scores = JSON.parse(localStorage.getItem('arcade_scan_scores') || '{}');
+            const key = `${user.username}_${currentMode}`;
+            const currentBest = scores[key];
+            if (!currentBest || finalSeconds < currentBest) {
+                scores[key] = finalSeconds;
+                localStorage.setItem('arcade_scan_scores', JSON.stringify(scores));
+                return true;
+            }
+            return false;
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function startGame() {
+            nextNumber = 1;
+            penaltyTime = 0;
+            isPlaying = true;
+            numbersArray = shuffle(Array.from({ length: 25 }, (_, i) => i + 1));
+
+            targetVal.textContent = '01';
+            timerVal.textContent = '0.00s';
+            overlay.style.display = 'none';
+
+            renderGrid();
+
+            startTime = performance.now();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const elapsed = ((performance.now() - startTime) / 1000) + penaltyTime;
+                timerVal.textContent = `${elapsed.toFixed(2)}s`;
+            }, 30);
+        }
+
+        function renderGrid() {
+            // เก็บจุดเล็งตรงกลางไว้ แล้วล้างเฉพาะปุ่มตัวเลข
+            matrixGrid.innerHTML = '<div class="center-focus"></div>';
+
+            numbersArray.forEach((num) => {
+                const cell = document.createElement('div');
+                const isCleared = num < nextNumber;
+                cell.className = isCleared ? 'cell cleared' : 'cell';
+                cell.textContent = String(num).padStart(2, '0');
+
+                if (!isCleared) {
+                    cell.onclick = () => handleCellClick(num, cell);
+                }
+
+                matrixGrid.appendChild(cell);
+            });
+        }
+
+        function handleCellClick(num, cellElement) {
+            if (!isPlaying) return;
+
+            if (num === nextNumber) {
+                playSound('hit');
+                nextNumber++;
+
+                if (nextNumber > 25) {
+                    endGame();
+                    return;
+                }
+
+                targetVal.textContent = String(nextNumber).padStart(2, '0');
+
+                // ถ้าเป็นโหมด GLITCH SHIFT ทุกๆ 5 ตัวเลขที่กดถูก จะสลับตำแหน่งตัวเลขที่ยังไม่ถูกเคลียร์
+                if (currentMode === 'GLITCH' && (nextNumber - 1) % 5 === 0) {
+                    playSound('shift');
+                    shuffleRemaining();
+                    renderGrid();
+                } else {
+                    cellElement.classList.add('cleared');
+                    cellElement.onclick = null;
+                }
+            } else {
+                // กดผิดตัว: บวกเวลาเพิ่ม 1.5 วินาที
+                playSound('miss');
+                penaltyTime += 1.5;
+                cellElement.classList.remove('wrong-flash');
+                void cellElement.offsetWidth;
+                cellElement.classList.add('wrong-flash');
+            }
+        }
+
+        function shuffleRemaining() {
+            // เก็บตำแหน่งของช่องที่เคลียร์ไปแล้วไว้ที่เดิม สลับเฉพาะช่องที่ยังเหลืออยู่
+            const remainingIndices = [];
+            const remainingValues = [];
+
+            numbersArray.forEach((val, idx) => {
+                if (val >= nextNumber) {
+                    remainingIndices.push(idx);
+                    remainingValues.push(val);
+                }
+            });
+
+            shuffle(remainingValues);
+
+            remainingIndices.forEach((gridIdx, i) => {
+                numbersArray[gridIdx] = remainingValues[i];
+            });
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            playSound('win');
+
+            const finalSeconds = Number((((performance.now() - startTime) / 1000) + penaltyTime).toFixed(2));
+            timerVal.textContent = `${finalSeconds.toFixed(2)}s`;
+
+            const isNewRecord = saveBestTime(finalSeconds);
+            loadBestTime();
+
+            let rank = '';
+            if (currentMode === 'STD') {
+                if (finalSeconds < 14) rank = '👁️ QUANTUM SCANNER (สายตาระดับพระเจ้า)';
+                else if (finalSeconds < 20) rank = '🦅 EAGLE EYE (กวาดสายตาเฉียบคมมาก)';
+                else if (finalSeconds < 28) rank = '💻 STANDARD OPERATIVE (เกณฑ์มาตรฐาน)';
+                else rank = '🐢 OPTICAL LAG (ลองฝึกจ้องจุดกึ่งกลางดูนะ!)';
+            } else {
+                if (finalSeconds < 22) rank = '⚡ GLITCH MASTER (ปรับตัวเหนือมนุษย์)';
+                else if (finalSeconds < 32) rank = '🛡️ CYBER TRACKER (ตามเป้าหมายแม่นยำ)';
+                else rank = '🌀 SIGNAL LOST (โดนตารางหลอกตาเข้าให้แล้ว)';
+            }
+
+            overlayTitle.textContent = isNewRecord ? 'NEW RECORD!' : 'SCAN COMPLETE';
+            overlayDesc.innerHTML = `
+                สแกนครบ 25 โหนดเรียบร้อย!<br><br>
+                เวลาสุทธิของคุณ: <strong style="color:var(--success); font-size:1.45rem;">${finalSeconds.toFixed(2)}s</strong><br>
+                <span style="color:var(--primary); font-size:0.88rem;">${rank}</span><br><br>
+                ${isNewRecord ? '<span style="color:var(--warning);">★ บันทึกสถิติความเร็วสูงสุดใหม่แล้ว ★</span>' : 'ลองกดใหม่อีกครั้งเพื่อทำลายสถิติ!'}
+            `;
+            startBtn.textContent = 'สแกนใหม่อีกครั้ง';
+            overlay.style.display = 'flex';
+        }
+
+        loadBestTime();
+    </script>
+</body>
+</html>
