@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Audit - ตรวจสอบข้อมูล</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="nav.css">
+    <script src="theme.js"></script>
+    <style>
+        .duo {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .grid-wrap { text-align: left; }
+        .grid-head {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .grid-head i { margin-right: 6px; color: var(--accent); }
+
+        .dgrid {
+            display: grid;
+            gap: 4px;
+            padding: 8px;
+            background: var(--bg-soft);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            aspect-ratio: 1 / 1;
+        }
+        .dcell {
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            color: var(--ink);
+            font-family: 'Consolas', 'SFMono-Regular', ui-monospace, monospace;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.12s, border-color 0.12s, color 0.12s;
+        }
+        .dgrid.hex .dcell { font-size: 0.8rem; }
+        .dcell:hover { border-color: var(--accent); }
+        .dcell.found { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+        .dcell.wrong { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); animation: shake 0.3s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
+        }
+
+        .tip { color: var(--muted); font-size: 0.8rem; font-weight: 300; }
+        .tip i { margin-right: 6px; color: var(--accent); }
+
+        .seg {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 5px;
+        }
+        .seg-btn {
+            padding: 9px 8px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .seg-btn small { display: block; font-size: 0.68rem; font-weight: 300; opacity: 0.85; }
+        .seg-btn:hover { color: var(--ink); }
+        .seg-btn.active { background: var(--surface); border-color: var(--accent); color: var(--accent); }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--surface);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 24px;
+            gap: 14px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+        .overlay h2 { font-size: 1.5rem; font-weight: 600; }
+        .best-record { font-size: 0.85rem; color: var(--muted); }
+        .rules-box {
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            font-weight: 300;
+            text-align: left;
+            width: 100%;
+        }
+        .rules-box b { font-weight: 600; }
+        .big-num { font-size: 2.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        :root[data-theme="office"] .dgrid,
+        :root[data-theme="office"] .seg { border-radius: 6px; }
+        :root[data-theme="office"] .dcell,
+        :root[data-theme="office"] .seg-btn { border-radius: 3px; }
+
+        @media (max-width: 560px) {
+            .duo { grid-template-columns: 1fr; }
+            .dgrid { max-width: 340px; margin: 0 auto; }
+            .grid-head { max-width: 340px; margin-left: auto; margin-right: auto; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="game-nav" style="--nav-max: 640px">
+        <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
+        <div class="nav-brand">WORKDESK</div>
+        <div class="nav-actions">
+            <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
+        </div>
+    </nav>
+
+    <div class="panel" style="--w: 640px; min-height: 560px;">
+        <h1 class="title">Data Audit</h1>
+        <p class="subtitle">เทียบข้อมูลสองชุด หาจุดที่ไม่ตรงกันให้เจอก่อนหมดเวลา</p>
+
+        <div class="stats" style="--cols: 3">
+            <div><span class="stat-label">เวลา</span><span id="time-val" class="stat-value">45.0s</span></div>
+            <div><span class="stat-label">ตรวจพบ</span><span id="found-val" class="stat-value">0</span></div>
+            <div><span class="stat-label">คะแนน</span><span id="score-val" class="stat-value">0</span></div>
+        </div>
+
+        <div class="duo">
+            <div class="grid-wrap">
+                <div class="grid-head"><i class="fa-solid fa-database"></i>ข้อมูลต้นฉบับ</div>
+                <div class="dgrid" id="grid-a"></div>
+            </div>
+            <div class="grid-wrap">
+                <div class="grid-head"><i class="fa-solid fa-file-circle-check"></i>ข้อมูลที่ต้องตรวจ</div>
+                <div class="dgrid" id="grid-b"></div>
+            </div>
+        </div>
+
+        <p class="tip"><i class="fa-solid fa-magnifying-glass"></i>มีเพียง 1 ช่องที่ต่างกัน คลิกช่องนั้นที่ฝั่งใดก็ได้ กดผิดเสียเวลา 2 วินาที</p>
+
+        <div class="overlay" id="overlay">
+            <h2 id="overlay-title">Data Audit</h2>
+            <div class="best-record" id="best-record">ผลดีที่สุด: 0</div>
+            <div class="seg" id="seg-mode">
+                <button class="seg-btn active" data-mode="BIN">Binary<small>0 / 1</small></button>
+                <button class="seg-btn" data-mode="HEX">HEX<small>รหัส 2 หลัก</small></button>
+            </div>
+            <div class="rules-box" id="overlay-desc">
+                ภายในเวลา 45 วินาที เทียบตารางสองชุดแล้วคลิก <b>ช่องที่ข้อมูลต่างกัน</b> ให้เจอมากที่สุด<br><br>
+                เจอแต่ละจุดได้ <b>100 คะแนน</b> + โบนัสความเร็วสูงสุด 60<br>
+                กดผิดเสียเวลา <b>2 วินาที</b> ตารางจะใหญ่ขึ้นเรื่อย ๆ
+            </div>
+            <button class="btn" id="start-btn">เริ่มงาน</button>
+        </div>
+    </div>
+
+    <script>
+        const GAME_SECONDS = 45;
+        const PENALTY = 2;
+        const HEX_CHARS = '0123456789ABCDEF';
+
+        let mode = 'BIN';
+        let playing = false, locked = false;
+        let found = 0, score = 0, penalty = 0, endAt = 0, timerInterval = null;
+        let size = 5, dataA = [], dataB = [], diffIdx = 0, roundStart = 0;
+        let muted = false;
+
+        const $ = (id) => document.getElementById(id);
+        const gridA = $('grid-a'), gridB = $('grid-b');
+        const timeVal = $('time-val'), foundVal = $('found-val'), scoreVal = $('score-val');
+        const overlay = $('overlay'), overlayTitle = $('overlay-title'), overlayDesc = $('overlay-desc');
+        const bestRecord = $('best-record'), startBtn = $('start-btn');
+        const soundBtn = $('sound-btn'), soundIcon = $('sound-icon');
+
+        // --- audio ---
+        let audioCtx = null;
+        function beep(freq, dur, type = 'sine', vol = 0.07) {
+            if (muted) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const t = audioCtx.currentTime;
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t); o.stop(t + dur);
+            } catch (e) {}
+        }
+        const sfx = {
+            hit: () => { beep(660, 0.07); setTimeout(() => beep(880, 0.09), 60); },
+            miss: () => beep(150, 0.2, 'triangle', 0.12),
+            end: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.09), i * 90))
+        };
+
+        // --- storage: best score per user and mode (higher = better) ---
+        function getUser() {
+            try { return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' }; }
+            catch (e) { return { username: 'guest' }; }
+        }
+        function readScores() {
+            try { return JSON.parse(localStorage.getItem('arcade_audit_scores') || '{}'); }
+            catch (e) { return {}; }
+        }
+        function bestKey() { return `${getUser().username}_${mode}`; }
+        function showBest() {
+            bestRecord.textContent = `ผลดีที่สุด (${mode === 'BIN' ? 'Binary' : 'HEX'}): ${readScores()[bestKey()] || 0}`;
+        }
+        function saveBest(v) {
+            const s = readScores();
+            const k = bestKey();
+            if (v > (s[k] || 0)) {
+                s[k] = v;
+                try { localStorage.setItem('arcade_audit_scores', JSON.stringify(s)); } catch (e) {}
+                return true;
+            }
+            return false;
+        }
+
+        // --- data generation ---
+        function randHexChar(except) {
+            let c;
+            do { c = HEX_CHARS[Math.floor(Math.random() * 16)]; } while (c === except);
+            return c;
+        }
+        function randCell() {
+            if (mode === 'BIN') return Math.random() < 0.5 ? '0' : '1';
+            return randHexChar() + randHexChar();
+        }
+        function alter(v) {
+            if (mode === 'BIN') return v === '0' ? '1' : '0';
+            // change exactly one character so the difference is subtle
+            const pos = Math.random() < 0.5 ? 0 : 1;
+            const chars = v.split('');
+            chars[pos] = randHexChar(chars[pos]);
+            return chars.join('');
+        }
+        function currentSize() {
+            if (mode === 'BIN') return Math.min(8, 5 + Math.floor(found / 3));
+            return Math.min(6, 4 + Math.floor(found / 4));
+        }
+
+        function newRound() {
+            locked = false;
+            size = currentSize();
+            const n = size * size;
+            dataA = Array.from({ length: n }, randCell);
+            dataB = dataA.slice();
+            diffIdx = Math.floor(Math.random() * n);
+            dataB[diffIdx] = alter(dataA[diffIdx]);
+            renderGrid(gridA, dataA);
+            renderGrid(gridB, dataB);
+            roundStart = performance.now();
+        }
+
+        function renderGrid(el, data) {
+            el.className = 'dgrid' + (mode === 'HEX' ? ' hex' : '');
+            el.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            el.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+            el.innerHTML = '';
+            data.forEach((v, i) => {
+                const c = document.createElement('div');
+                c.className = 'dcell';
+                c.textContent = v;
+                c.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    handleClick(i, c);
+                });
+                el.appendChild(c);
+            });
+        }
+
+        // --- flow ---
+        function remaining() {
+            return Math.max(0, (endAt - performance.now()) / 1000 - penalty);
+        }
+
+        function startGame() {
+            found = 0; score = 0; penalty = 0;
+            playing = true;
+            endAt = performance.now() + GAME_SECONDS * 1000;
+            hud();
+            timeVal.textContent = GAME_SECONDS.toFixed(1) + 's';
+            overlay.style.display = 'none';
+            newRound();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const left = remaining();
+                timeVal.textContent = left.toFixed(1) + 's';
+                if (left <= 0) endGame();
+            }, 50);
+        }
+
+        function hud() {
+            foundVal.textContent = found;
+            scoreVal.textContent = score;
+        }
+
+        function handleClick(i, cell) {
+            if (!playing || locked) return;
+
+            if (i === diffIdx) {
+                locked = true;
+                const sec = (performance.now() - roundStart) / 1000;
+                const bonus = Math.max(0, Math.round(60 - sec * 8));
+                score += 100 + bonus;
+                found++;
+                hud();
+                sfx.hit();
+                gridA.children[i].classList.add('found');
+                gridB.children[i].classList.add('found');
+                setTimeout(() => { if (playing) newRound(); }, 220);
+            } else {
+                penalty += PENALTY;
+                sfx.miss();
+                cell.classList.remove('wrong');
+                void cell.offsetWidth;
+                cell.classList.add('wrong');
+                setTimeout(() => cell.classList.remove('wrong'), 350);
+                if (remaining() <= 0) endGame();
+            }
+        }
+
+        function rating(s) {
+            if (s >= 2000) return 'ไวมาก';
+            if (s >= 1400) return 'ไวกว่าค่าเฉลี่ย';
+            if (s >= 800) return 'ปกติ';
+            return 'ลองฝึกอีกนิด';
+        }
+
+        function endGame() {
+            if (!playing) return;
+            playing = false;
+            clearInterval(timerInterval);
+            timeVal.textContent = '0.0s';
+            sfx.end();
+
+            const isNew = saveBest(score);
+            overlayTitle.textContent = isNew ? 'ผลดีที่สุดใหม่' : 'หมดเวลา';
+            overlayDesc.innerHTML = `
+                คะแนนรวม<br>
+                <span class="big-num">${score}</span><br>
+                <span style="color:var(--muted);">${rating(score)} · ตรวจพบ ${found} จุด${isNew ? '<br>บันทึกผลดีที่สุดใหม่แล้ว' : ''}</span>`;
+            startBtn.textContent = 'ทำอีกรอบ';
+            showBest();
+            overlay.style.display = 'flex';
+        }
+
+        // --- events ---
+        $('seg-mode').addEventListener('click', (e) => {
+            const b = e.target.closest('[data-mode]');
+            if (!b) return;
+            mode = b.dataset.mode;
+            [...$('seg-mode').children].forEach(x => x.classList.toggle('active', x === b));
+            showBest();
+        });
+
+        startBtn.addEventListener('click', () => { startBtn.blur(); startGame(); });
+        document.addEventListener('keydown', (e) => {
+            if (!playing && (e.code === 'Enter' || e.code === 'Space')) {
+                e.preventDefault();
+                startGame();
+            }
+        });
+        soundBtn.addEventListener('click', () => {
+            muted = !muted;
+            soundIcon.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('muted', muted);
+        });
+
+        // preview behind the start screen
+        newRound();
+        showBest();
+    </script>
+</body>
+</html>

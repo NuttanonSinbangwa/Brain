@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual Desk - ทำสองงานพร้อมกัน</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="nav.css">
+    <script src="theme.js"></script>
+    <style>
+        .duo {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .lane-head {
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-bottom: 6px;
+            text-align: left;
+        }
+        .lane-head b { color: var(--ink); font-weight: 600; }
+        .lane-head i { margin-right: 6px; color: var(--accent); }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: var(--bg-soft);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            touch-action: none;
+        }
+        #left-canvas { cursor: none; }
+
+        .move-pad {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .move-btn {
+            height: 44px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            color: var(--ink);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.1s, border-color 0.1s, transform 0.1s;
+        }
+        .move-btn:hover { border-color: var(--accent); }
+        .move-btn:active { background: var(--accent); border-color: var(--accent); color: var(--on-accent); transform: scale(0.96); }
+
+        .tip { color: var(--muted); font-size: 0.8rem; font-weight: 300; }
+        .tip i { margin-right: 6px; color: var(--accent); }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--surface);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 24px;
+            gap: 14px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+        .overlay h2 { font-size: 1.5rem; font-weight: 600; }
+        .best-record { font-size: 0.85rem; color: var(--muted); }
+        .rules-box {
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            font-weight: 300;
+            text-align: left;
+            width: 100%;
+        }
+        .rules-box b { font-weight: 600; }
+        .big-num { font-size: 2.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        :root[data-theme="office"] canvas { border-radius: 6px; }
+        :root[data-theme="office"] .move-btn { border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <nav class="game-nav" style="--nav-max: 640px">
+        <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
+        <div class="nav-brand">WORKDESK</div>
+        <div class="nav-actions">
+            <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
+        </div>
+    </nav>
+
+    <div class="panel" style="--w: 640px; min-height: 560px;">
+        <h1 class="title">Dual Desk</h1>
+        <p class="subtitle">ทำสองงานพร้อมกัน ประคองเมาส์ฝั่งซ้าย หลบสิ่งกีดขวางฝั่งขวา</p>
+
+        <div class="stats" style="--cols: 4">
+            <div><span class="stat-label">เวลา</span><span id="time-val" class="stat-value">40.0s</span></div>
+            <div><span class="stat-label">โฟกัสเป้า</span><span id="focus-val" class="stat-value">0%</span></div>
+            <div><span class="stat-label">หลบได้</span><span id="dodge-val" class="stat-value">0</span></div>
+            <div><span class="stat-label">ชน</span><span id="hit-val" class="stat-value">0</span></div>
+        </div>
+
+        <div class="duo">
+            <div>
+                <div class="lane-head"><i class="fa-solid fa-computer-mouse"></i><b>งาน A</b> · เมาส์ให้อยู่ในวง</div>
+                <canvas id="left-canvas" width="300" height="360"></canvas>
+            </div>
+            <div>
+                <div class="lane-head"><i class="fa-solid fa-keyboard"></i><b>งาน B</b> · A/D หรือ ←/→ หลบ</div>
+                <canvas id="right-canvas" width="300" height="360"></canvas>
+                <div class="move-pad">
+                    <button class="move-btn" id="btn-left" aria-label="ซ้าย"><i class="fa-solid fa-arrow-left"></i></button>
+                    <button class="move-btn" id="btn-right" aria-label="ขวา"><i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <p class="tip"><i class="fa-solid fa-bullseye"></i>ต้องทำทั้งสองงานให้ได้พร้อมกัน ถ้าทิ้งงานใดงานหนึ่งคะแนนจะตก</p>
+
+        <div class="overlay" id="overlay">
+            <h2 id="overlay-title">Dual Desk</h2>
+            <div class="best-record" id="best-record">ผลดีที่สุด: 0</div>
+            <div class="rules-box" id="overlay-desc">
+                ภายในเวลา 40 วินาที ทำสองงานพร้อมกัน<br><br>
+                <b>งาน A</b> · ขยับเมาส์ (หรือลากนิ้ว) ให้อยู่ในวงกลมที่เคลื่อนที่ตลอดเวลา<br>
+                <b>งาน B</b> · กด A / D หรือ ← / → เพื่อเปลี่ยนเลน หลบสิ่งกีดขวางที่ตกลงมา<br><br>
+                คะแนน = % ที่อยู่ในวง + หลบได้ ×3 − ชน ×8
+            </div>
+            <button class="btn" id="start-btn">เริ่มงาน</button>
+        </div>
+    </div>
+
+    <script>
+        const W = 300, H = 360;
+        const DURATION = 40000;
+        const LANES = 3, LANE_W = W / LANES;
+        const PLAYER_Y = H - 56, PLAYER_H = 36, OB_H = 34;
+
+        const $ = (id) => document.getElementById(id);
+        const lc = $('left-canvas'), rc = $('right-canvas');
+        const lctx = lc.getContext('2d'), rctx = rc.getContext('2d');
+        const timeVal = $('time-val'), focusVal = $('focus-val'), dodgeVal = $('dodge-val'), hitVal = $('hit-val');
+        const overlay = $('overlay'), overlayTitle = $('overlay-title'), overlayDesc = $('overlay-desc');
+        const bestRecord = $('best-record'), startBtn = $('start-btn');
+        const soundBtn = $('sound-btn'), soundIcon = $('sound-icon');
+
+        let playing = false, raf = null, muted = false;
+        let startMs = 0, lastMs = 0;
+
+        // task A
+        let tgt, ptr = { x: 0, y: 0, inside: false }, inTime = 0, totalTime = 0;
+        // task B
+        let lane, obstacles, spawnTimer, dodged, hits, hitFlash;
+
+        // --- audio ---
+        let audioCtx = null;
+        function beep(freq, dur, type = 'sine', vol = 0.06) {
+            if (muted) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const t = audioCtx.currentTime;
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t); o.stop(t + dur);
+            } catch (e) {}
+        }
+        const sfx = {
+            move: () => beep(480, 0.03, 'sine', 0.03),
+            hit: () => beep(130, 0.25, 'triangle', 0.14),
+            end: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.09), i * 90))
+        };
+
+        // --- storage: best score per user (higher = better) ---
+        function getUser() {
+            try { return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' }; }
+            catch (e) { return { username: 'guest' }; }
+        }
+        function readScores() {
+            try { return JSON.parse(localStorage.getItem('arcade_dual_scores') || '{}'); }
+            catch (e) { return {}; }
+        }
+        function showBest() {
+            bestRecord.textContent = `ผลดีที่สุด: ${readScores()[getUser().username] || 0}`;
+        }
+        function saveBest(score) {
+            const scores = readScores();
+            const u = getUser().username;
+            if (score > (scores[u] || 0)) {
+                scores[u] = score;
+                try { localStorage.setItem('arcade_dual_scores', JSON.stringify(scores)); } catch (e) {}
+                return true;
+            }
+            return false;
+        }
+
+        function colors() {
+            const cs = getComputedStyle(document.documentElement);
+            const v = (n) => cs.getPropertyValue(n).trim();
+            return {
+                accent: v('--accent'), accentSoft: v('--accent-soft'), good: v('--good'), goodSoft: v('--good-soft'),
+                bad: v('--bad'), badSoft: v('--bad-soft'), ink: v('--ink'), line: v('--line'), soft: v('--bg-soft'), surface: v('--surface')
+            };
+        }
+
+        // --- pointer (task A) ---
+        function setPtr(e) {
+            const r = lc.getBoundingClientRect();
+            ptr.x = (e.clientX - r.left) * (W / r.width);
+            ptr.y = (e.clientY - r.top) * (H / r.height);
+            ptr.inside = true;
+        }
+        lc.addEventListener('pointermove', setPtr);
+        lc.addEventListener('pointerdown', (e) => { e.preventDefault(); setPtr(e); });
+        lc.addEventListener('pointerleave', () => { ptr.inside = false; });
+
+        // --- lane movement (task B) ---
+        function moveLane(d) {
+            if (!playing) return;
+            const n = Math.max(0, Math.min(LANES - 1, lane + d));
+            if (n !== lane) { lane = n; sfx.move(); }
+        }
+        $('btn-left').addEventListener('pointerdown', (e) => { e.preventDefault(); moveLane(-1); });
+        $('btn-right').addEventListener('pointerdown', (e) => { e.preventDefault(); moveLane(1); });
+
+        // e.code is layout-independent, so A/D works with a Thai keyboard too
+        document.addEventListener('keydown', (e) => {
+            if (!playing) {
+                if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); startGame(); }
+                return;
+            }
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') { e.preventDefault(); if (!e.repeat) moveLane(-1); }
+            else if (e.code === 'ArrowRight' || e.code === 'KeyD') { e.preventDefault(); if (!e.repeat) moveLane(1); }
+            else if (e.code === 'ArrowUp' || e.code === 'ArrowDown') e.preventDefault();
+        });
+
+        // --- game ---
+        function startGame() {
+            tgt = { x: W / 2, y: H / 2, r: 36, ang: Math.random() * Math.PI * 2 };
+            inTime = 0; totalTime = 0;
+            lane = 1; obstacles = []; spawnTimer = 600; dodged = 0; hits = 0; hitFlash = 0;
+            overlay.style.display = 'none';
+            playing = true;
+            startMs = lastMs = performance.now();
+            hud(0);
+            cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(frame);
+        }
+
+        function frame(now) {
+            if (!playing) return;
+            const dt = Math.min(0.05, (now - lastMs) / 1000);
+            lastMs = now;
+            const elapsed = now - startMs;
+            if (elapsed >= DURATION) return endGame();
+            const progress = elapsed / DURATION;
+
+            // task A: wandering target
+            const sp = 70 + progress * 80;
+            tgt.ang += (Math.random() - 0.5) * dt * 5;
+            tgt.x += Math.cos(tgt.ang) * sp * dt;
+            tgt.y += Math.sin(tgt.ang) * sp * dt;
+            if (tgt.x < tgt.r) { tgt.x = tgt.r; tgt.ang = Math.PI - tgt.ang; }
+            if (tgt.x > W - tgt.r) { tgt.x = W - tgt.r; tgt.ang = Math.PI - tgt.ang; }
+            if (tgt.y < tgt.r) { tgt.y = tgt.r; tgt.ang = -tgt.ang; }
+            if (tgt.y > H - tgt.r) { tgt.y = H - tgt.r; tgt.ang = -tgt.ang; }
+            totalTime += dt;
+            if (ptr.inside && Math.hypot(ptr.x - tgt.x, ptr.y - tgt.y) <= tgt.r) inTime += dt;
+
+            // task B: obstacles
+            spawnTimer -= dt * 1000;
+            if (spawnTimer <= 0) {
+                obstacles.push({ lane: Math.floor(Math.random() * LANES), y: -OB_H });
+                spawnTimer = Math.max(360, 900 - progress * 480) * (0.8 + Math.random() * 0.4);
+            }
+            const fall = 150 + progress * 140;
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const o = obstacles[i];
+                o.y += fall * dt;
+                const overlapY = o.y + OB_H >= PLAYER_Y && o.y <= PLAYER_Y + PLAYER_H;
+                if (overlapY && o.lane === lane) {
+                    hits++; hitFlash = 0.3; sfx.hit();
+                    obstacles.splice(i, 1);
+                } else if (o.y > H) {
+                    dodged++;
+                    obstacles.splice(i, 1);
+                }
+            }
+            if (hitFlash > 0) hitFlash -= dt;
+
+            hud(elapsed);
+            drawLeft();
+            drawRight();
+            raf = requestAnimationFrame(frame);
+        }
+
+        function hud(elapsed) {
+            timeVal.textContent = Math.max(0, (DURATION - elapsed) / 1000).toFixed(1) + 's';
+            focusVal.textContent = (totalTime ? Math.round(inTime / totalTime * 100) : 0) + '%';
+            dodgeVal.textContent = dodged;
+            hitVal.textContent = hits;
+        }
+
+        function drawLeft() {
+            const c = colors();
+            lctx.clearRect(0, 0, W, H);
+            const on = ptr.inside && Math.hypot(ptr.x - tgt.x, ptr.y - tgt.y) <= tgt.r;
+            lctx.beginPath();
+            lctx.arc(tgt.x, tgt.y, tgt.r, 0, Math.PI * 2);
+            lctx.fillStyle = on ? c.goodSoft : c.badSoft;
+            lctx.fill();
+            lctx.lineWidth = 3;
+            lctx.strokeStyle = on ? c.good : c.bad;
+            lctx.stroke();
+            if (ptr.inside) {
+                lctx.beginPath();
+                lctx.arc(ptr.x, ptr.y, 6, 0, Math.PI * 2);
+                lctx.fillStyle = c.accent;
+                lctx.fill();
+            }
+        }
+
+        function drawRight() {
+            const c = colors();
+            rctx.clearRect(0, 0, W, H);
+            rctx.strokeStyle = c.line;
+            rctx.lineWidth = 1;
+            for (let i = 1; i < LANES; i++) {
+                rctx.beginPath();
+                rctx.moveTo(i * LANE_W, 0);
+                rctx.lineTo(i * LANE_W, H);
+                rctx.stroke();
+            }
+            rctx.fillStyle = c.bad;
+            obstacles.forEach(o => {
+                const x = o.lane * LANE_W + 14;
+                rctx.beginPath();
+                rctx.roundRect(x, o.y, LANE_W - 28, OB_H, 8);
+                rctx.fill();
+            });
+            rctx.fillStyle = hitFlash > 0 ? c.bad : c.accent;
+            rctx.beginPath();
+            rctx.roundRect(lane * LANE_W + 18, PLAYER_Y, LANE_W - 36, PLAYER_H, 10);
+            rctx.fill();
+        }
+
+        function rating(score) {
+            if (score >= 150) return 'แบ่งสมาธิได้ยอดเยี่ยม';
+            if (score >= 110) return 'ไวกว่าค่าเฉลี่ย';
+            if (score >= 70) return 'ปกติ';
+            return 'ลองฝึกอีกนิด';
+        }
+
+        function endGame() {
+            playing = false;
+            cancelAnimationFrame(raf);
+            sfx.end();
+            hud(DURATION);
+            const pct = totalTime ? Math.round(inTime / totalTime * 100) : 0;
+            const score = Math.max(0, pct + dodged * 3 - hits * 8);
+            const isNew = saveBest(score);
+            overlayTitle.textContent = isNew ? 'ผลดีที่สุดใหม่' : 'หมดเวลา';
+            overlayDesc.innerHTML = `
+                คะแนนรวม<br>
+                <span class="big-num">${score}</span><br>
+                <span style="color:var(--muted);">${rating(score)} · โฟกัสเป้า ${pct}% · หลบได้ ${dodged} · ชน ${hits}${isNew ? '<br>บันทึกผลดีที่สุดใหม่แล้ว' : ''}</span>`;
+            startBtn.textContent = 'ทำอีกรอบ';
+            showBest();
+            overlay.style.display = 'flex';
+        }
+
+        startBtn.addEventListener('click', () => { startBtn.blur(); startGame(); });
+        soundBtn.addEventListener('click', () => {
+            muted = !muted;
+            soundIcon.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('muted', muted);
+        });
+
+        // idle preview
+        tgt = { x: W / 2, y: H / 2, r: 36, ang: 0 };
+        ptr.inside = false; lane = 1; obstacles = []; hitFlash = 0;
+        drawLeft(); drawRight();
+        showBest();
+    </script>
+</body>
+</html>

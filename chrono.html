@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deadline Sense - กะเวลาส่งงาน</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="nav.css">
+    <script src="theme.js"></script>
+    <style>
+        .clock-box {
+            background: var(--bg-soft);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            height: 210px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 18px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .clock-box.dark { background: var(--ink); border-color: var(--ink); }
+        .clock-box.ok { background: var(--good-soft); border-color: var(--good); }
+        .clock-box.bad { background: var(--bad-soft); border-color: var(--bad); }
+
+        .target-label { font-size: 2.82rem; color: var(--muted); font-weight: 300; }
+        .clock {
+            font-size: 3.4rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.02em;
+            line-height: 1;
+        }
+        .clock-box.dark .clock { color: var(--muted); }
+        .clock-box.dark .target-label,
+        .clock-box.dark .clock-sub { color: var(--muted); }
+        .clock-box.ok .clock { color: var(--good); }
+        .clock-box.bad .clock { color: var(--bad); }
+        .clock-sub { min-height: 22px; font-size: 0.88rem; color: var(--muted); font-weight: 400; }
+        .clock-box.ok .clock-sub { color: var(--good); }
+        .clock-box.bad .clock-sub { color: var(--bad); }
+
+        .stop-btn {
+            width: 100%;
+            max-width: 360px;
+            height: 72px;
+            font-size: 1.1rem;
+            letter-spacing: 0.04em;
+        }
+
+        .seg {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 5px;
+        }
+        .seg-btn {
+            padding: 9px 8px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .seg-btn:hover { color: var(--ink); }
+        .seg-btn.active { background: var(--surface); border-color: var(--accent); color: var(--accent); }
+        .seg-label { width: 100%; text-align: left; font-size: 0.72rem; color: var(--muted); margin-bottom: -6px; }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--surface);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 24px;
+            gap: 14px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+        .overlay h2 { font-size: 1.5rem; font-weight: 600; }
+        .best-record { font-size: 0.85rem; color: var(--muted); }
+        .rules-box {
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            font-weight: 300;
+            text-align: left;
+            width: 100%;
+        }
+        .rules-box b { font-weight: 600; }
+        .big-num { font-size: 2.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        :root[data-theme="office"] .clock-box,
+        :root[data-theme="office"] .seg { border-radius: 6px; }
+        :root[data-theme="office"] .seg-btn { border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <nav class="game-nav" style="--nav-max: 520px">
+        <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
+        <div class="nav-brand">WORKDESK</div>
+        <div class="nav-actions">
+            <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
+        </div>
+    </nav>
+
+    <div class="panel" style="--w: 520px; min-height: 500px;">
+        <h1 class="title">Deadline Sense</h1>
+        <p class="subtitle">กะเวลาส่งงานให้ตรงเป้า เมื่อหน้าปัดเวลาถูกซ่อน</p>
+
+        <div class="stats" style="--cols: 3">
+            <div><span class="stat-label">รอบที่</span><span id="round-val" class="stat-value">0/5</span></div>
+            <div><span class="stat-label">คลาดเคลื่อนล่าสุด</span><span id="last-val" class="stat-value">--</span></div>
+            <div><span class="stat-label">คลาดเฉลี่ย</span><span id="avg-val" class="stat-value">--</span></div>
+        </div>
+
+        <div id="clock-box" class="clock-box">
+            <div class="target-label" id="target-label">เป้าหมาย 5.00 วินาที</div>
+            <div class="clock" id="clock">0.00</div>
+            <div class="clock-sub" id="clock-sub">กดเริ่มงานเพื่อเริ่มจับเวลา</div>
+        </div>
+
+        <button id="stop-btn" class="btn stop-btn disabled"><i class="fa-solid fa-hand"></i> หยุด (Space)</button>
+
+        <div class="overlay" id="overlay">
+            <h2 id="overlay-title">Deadline Sense</h2>
+            <div class="best-record" id="best-record">ผลดีที่สุด: --</div>
+
+            <div class="seg-label">เวลาเป้าหมาย</div>
+            <div class="seg" id="seg-target">
+                <button class="seg-btn active" data-target="5">5 วินาที</button>
+                <button class="seg-btn" data-target="random">สุ่ม (3–20 วินาที)</button>
+            </div>
+
+            <div class="rules-box" id="overlay-desc">
+                ทำ 5 รอบ แต่ละรอบเห็นตัวเลขเดินแค่ <b>2 วินาทีแรก</b> แล้วหน้าปัดจะถูกซ่อน<br>
+                โหมด <b>5 วินาที</b> เป้าเท่าเดิมทุกรอบ โหมด <b>สุ่ม</b> เป้าเปลี่ยนทุกรอบ (3–20 วินาที)<br>
+                นับเวลาในใจ แล้วกด <b>หยุด</b> (ปุ่มหรือ Space/Enter) ให้ตรงเป้าหมายที่สุด<br>
+                คะแนนคือค่าคลาดเคลื่อนเฉลี่ย ยิ่งน้อยยิ่งดี
+            </div>
+            <button class="btn" id="start-btn">เริ่มงาน</button>
+        </div>
+    </div>
+
+    <script>
+        const ROUNDS = 5;
+        const SHOW_MS = 2000;
+
+        let mode = '5';        // '5' | 'random'
+        let target = 5;        // target of the current round (seconds)
+        let targets = [];      // targets used so far this session
+        let round = 0, errors = [];
+        let state = 'idle';   // idle | ready | running | between
+        let startT = 0, tick = null, nextTimer = null, hidden = false;
+        let muted = false;
+
+        const $ = (id) => document.getElementById(id);
+        const clockBox = $('clock-box'), clockEl = $('clock'), clockSub = $('clock-sub'), targetLabel = $('target-label');
+        const roundVal = $('round-val'), lastVal = $('last-val'), avgVal = $('avg-val');
+        const stopBtn = $('stop-btn'), overlay = $('overlay'), overlayTitle = $('overlay-title');
+        const overlayDesc = $('overlay-desc'), bestRecord = $('best-record'), startBtn = $('start-btn');
+        const soundBtn = $('sound-btn'), soundIcon = $('sound-icon');
+
+        // --- audio ---
+        let audioCtx = null;
+        function beep(freq, dur, type = 'sine', vol = 0.07) {
+            if (muted) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const t = audioCtx.currentTime;
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t); o.stop(t + dur);
+            } catch (e) {}
+        }
+        const sfx = {
+            go: () => beep(660, 0.08),
+            hide: () => beep(330, 0.12, 'triangle', 0.05),
+            good: () => { beep(660, 0.08); setTimeout(() => beep(880, 0.1), 70); },
+            bad: () => beep(170, 0.2, 'triangle', 0.1),
+            end: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.09), i * 90))
+        };
+
+        // --- storage: best (lowest) average error in ms, per user and per target ---
+        function getUser() {
+            try { return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' }; }
+            catch (e) { return { username: 'guest' }; }
+        }
+        function readScores() {
+            try { return JSON.parse(localStorage.getItem('arcade_chrono_scores') || '{}'); }
+            catch (e) { return {}; }
+        }
+        function bestKey() { return `${getUser().username}_${mode}`; }
+        function showBest() {
+            const b = readScores()[bestKey()];
+            const label = mode === 'random' ? 'สุ่ม' : mode + ' วินาที';
+            bestRecord.textContent = `ผลดีที่สุด (${label}): ${b ? '±' + b + ' ms' : '--'}`;
+        }
+        function idleTargetText() {
+            return mode === 'random' ? 'เป้าหมายสุ่มทุกรอบ' : `เป้าหมาย ${(+mode).toFixed(2)} วินาที`;
+        }
+        function saveBest(ms) {
+            const scores = readScores();
+            const k = bestKey();
+            if (scores[k] === undefined || ms < scores[k]) {
+                scores[k] = ms;
+                try { localStorage.setItem('arcade_chrono_scores', JSON.stringify(scores)); } catch (e) {}
+                return true;
+            }
+            return false;
+        }
+
+        // --- UI ---
+        function avgError() {
+            return errors.length ? Math.round(errors.reduce((a, b) => a + b, 0) / errors.length) : null;
+        }
+        function updateStats() {
+            roundVal.textContent = `${Math.min(round, ROUNDS)}/${ROUNDS}`;
+            const a = avgError();
+            avgVal.textContent = a === null ? '--' : '±' + a + 'ms';
+        }
+        function setClock(cls, text, sub) {
+            clockBox.className = 'clock-box ' + cls;
+            clockEl.textContent = text;
+            clockSub.textContent = sub;
+        }
+        function clearTimers() {
+            clearInterval(tick);
+            clearTimeout(nextTimer);
+        }
+
+        // --- flow ---
+        function startGame() {
+            clearTimers();
+            round = 0; errors = []; targets = [];
+            lastVal.textContent = '--';
+            targetLabel.textContent = idleTargetText();
+            overlay.style.display = 'none';
+            updateStats();
+            nextRound();
+        }
+
+        function nextRound() {
+            if (round >= ROUNDS) return endGame();
+            round++;
+            if (mode === 'random') {
+                let t;
+                do { t = 3 + Math.floor(Math.random() * 17); } while (t === target && targets.length);
+                target = t;
+            } else {
+                target = 5;
+            }
+            targets.push(target);
+            targetLabel.textContent = `เป้าหมาย ${target.toFixed(2)} วินาที`;
+            updateStats();
+            state = 'ready';
+            stopBtn.classList.add('disabled');
+            setClock('', '0.00', 'เตรียมพร้อม...');
+            nextTimer = setTimeout(beginRun, 800);
+        }
+
+        function beginRun() {
+            state = 'running';
+            hidden = false;
+            startT = performance.now();
+            stopBtn.classList.remove('disabled');
+            sfx.go();
+            setClock('', '0.00', 'ดูตัวเลขเดิน...');
+            tick = setInterval(update, 30);
+        }
+
+        function update() {
+            const el = performance.now() - startT;
+            if (el < SHOW_MS) {
+                clockEl.textContent = (el / 1000).toFixed(2);
+            } else if (!hidden) {
+                hidden = true;
+                sfx.hide();
+                setClock('dark', '--.--', 'ซ่อนเวลาแล้ว นับในใจ แล้วกดหยุด');
+            }
+            // safety: give up if the player waits far too long
+            if (el > target * 1000 * 2 + 2000) stopNow(true);
+        }
+
+        function stopNow(timedOut = false) {
+            if (state !== 'running') return;
+            const el = performance.now() - startT;
+            clearInterval(tick);
+            state = 'between';
+            stopBtn.classList.add('disabled');
+
+            const diff = el - target * 1000;
+            const err = Math.round(Math.abs(diff));
+            errors.push(err);
+            lastVal.textContent = '±' + err + 'ms';
+            updateStats();
+
+            const good = err <= 150 * (target / 5);
+            (good ? sfx.good : sfx.bad)();
+            const dir = diff < 0 ? 'เร็วไป' : 'ช้าไป';
+            setClock(good ? 'ok' : 'bad', (el / 1000).toFixed(2),
+                timedOut ? `หมดเวลารอ · ${dir} ${err} ms` : `${dir} ${err} ms`);
+            nextTimer = setTimeout(nextRound, 1800);
+        }
+
+        function rating(avg) {
+            const s = (targets.reduce((a, b) => a + b, 0) / (targets.length || 1)) / 5;
+            if (avg < 120 * s) return 'แม่นมาก';
+            if (avg < 300 * s) return 'แม่นกว่าค่าเฉลี่ย';
+            if (avg < 700 * s) return 'ปกติ';
+            return 'ลองฝึกนับเวลาอีกนิด';
+        }
+
+        function endGame() {
+            state = 'idle';
+            clearTimers();
+            sfx.end();
+            stopBtn.classList.add('disabled');
+
+            const avg = avgError();
+            const isNew = saveBest(avg);
+            overlayTitle.textContent = isNew ? 'ผลดีที่สุดใหม่' : 'เสร็จสิ้น';
+            overlayDesc.innerHTML = `
+                คลาดเคลื่อนเฉลี่ย<br>
+                <span class="big-num">±${avg} ms</span><br>
+                <span style="color:var(--muted);">${rating(avg)} · แม่นสุด ±${Math.min(...errors)} ms${isNew ? '<br>บันทึกผลดีที่สุดใหม่แล้ว' : ''}</span>`;
+            startBtn.textContent = 'ทำอีกรอบ';
+            showBest();
+            overlay.style.display = 'flex';
+        }
+
+        // --- events ---
+        $('seg-target').addEventListener('click', (e) => {
+            const b = e.target.closest('[data-target]');
+            if (!b) return;
+            mode = b.dataset.target;
+            [...$('seg-target').children].forEach(x => x.classList.toggle('active', x === b));
+            targetLabel.textContent = idleTargetText();
+            showBest();
+        });
+
+        startBtn.addEventListener('click', () => { startBtn.blur(); startGame(); });
+        stopBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); stopNow(); });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+            if (e.code === 'Space' || e.code === 'Enter') {
+                e.preventDefault();
+                if (state === 'idle') startGame();
+                else if (state === 'running') stopNow();
+            }
+        });
+
+        soundBtn.addEventListener('click', () => {
+            muted = !muted;
+            soundIcon.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('muted', muted);
+        });
+
+        targetLabel.textContent = idleTargetText();
+        showBest();
+    </script>
+</body>
+</html>
