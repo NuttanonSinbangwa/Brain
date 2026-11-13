@@ -245,7 +245,7 @@
                     <span class="chip">Typing Speed</span>
                 </div>
                 <h2>Rapid Input</h2>
-                <p>พิมพ์ข้อให้เร็วและแม่นยำ เลือกภาษาไทยหรืออังกฤษ และเลือกเวลา 30 / 60 / 120 วินาที</p>
+                <p>พิมพ์ข้อความให้เร็วและแม่นยำ เลือกภาษาไทยหรืออังกฤษ และเลือกเวลา 30 / 60 / 120 วินาที</p>
             </div>
             <div>
                 <div class="best"><span>WPM สูงสุด</span><b id="best-typing-wpm">--</b></div>
@@ -311,20 +311,22 @@
     <script>
         let soundMuted = false;
 
+        let clickCtx = null;
         function playClickSound() {
             if (soundMuted) return;
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
+                if (!clickCtx) clickCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (clickCtx.state === 'suspended') clickCtx.resume();
+                const osc = clickCtx.createOscillator();
+                const gain = clickCtx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-                gain.gain.setValueAtTime(0.08, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+                osc.frequency.setValueAtTime(587.33, clickCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, clickCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, clickCtx.currentTime + 0.12);
                 osc.connect(gain);
-                gain.connect(ctx.destination);
+                gain.connect(clickCtx.destination);
                 osc.start();
-                osc.stop(ctx.currentTime + 0.12);
+                osc.stop(clickCtx.currentTime + 0.12);
             } catch (e) {}
         }
 
@@ -336,29 +338,72 @@
             soundBtn.classList.toggle('muted', soundMuted);
         });
 
-        // --- AUTH ---
-        let currentAuthMode = 'login';
-        let currentUser = JSON.parse(localStorage.getItem('arcade_current_user')) || null;
+        // --- safe storage helpers ---
+        function readJSON(key, fallback) {
+            try {
+                const raw = localStorage.getItem(key);
+                if (raw === null) return fallback;
+                const v = JSON.parse(raw);
+                return v === null || v === undefined ? fallback : v;
+            } catch (e) { return fallback; }
+        }
+        function writeJSON(key, value) {
+            try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+        }
 
-        function getUsersDB() { return JSON.parse(localStorage.getItem('arcade_users_db')) || {}; }
-        function saveUsersDB(db) { localStorage.setItem('arcade_users_db', JSON.stringify(db)); }
+        // --- AUTH ---
+        // Session object holds only { username, displayName } (never the password / hash).
+        let currentAuthMode = 'login';
+        let currentUser = (function () {
+            const u = readJSON('arcade_current_user', null);
+            return u && typeof u.username === 'string' ? { username: u.username, displayName: u.displayName || u.username } : null;
+        })();
+
+        function getUsersDB() { return readJSON('arcade_users_db', {}); }
+        function saveUsersDB(db) { writeJSON('arcade_users_db', db); }
+        function hasUser(db, name) { return Object.prototype.hasOwnProperty.call(db, name); }
+
+        async function hashPassword(username, password) {
+            const data = new TextEncoder().encode('workdesk:' + username + ':' + password);
+            if (window.crypto && crypto.subtle) {
+                const buf = await crypto.subtle.digest('SHA-256', data);
+                return 'sha256:' + Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+            // fallback for non-secure contexts (weak, but never plain text)
+            let h = 5381;
+            data.forEach(b => { h = ((h << 5) + h + b) | 0; });
+            return 'weak:' + (h >>> 0).toString(16);
+        }
 
         function renderUserBar() {
             const userBar = document.getElementById('user-bar');
+            userBar.textContent = '';
+
             if (currentUser) {
-                userBar.innerHTML = `
-                    <button onclick="openProfileModal()" class="user-btn">
-                        <i class="fa-solid fa-circle-user" style="color:var(--accent)"></i>
-                        <span>${currentUser.displayName || currentUser.username}</span>
-                    </button>
-                    <button onclick="logout()" class="nav-icon-btn" title="ออกจากระบบ">
-                        <i class="fa-solid fa-right-from-bracket"></i>
-                    </button>`;
+                const profileBtn = document.createElement('button');
+                profileBtn.className = 'user-btn';
+                profileBtn.addEventListener('click', openProfileModal);
+                const icon = document.createElement('i');
+                icon.className = 'fa-solid fa-circle-user';
+                icon.style.color = 'var(--accent)';
+                const name = document.createElement('span');
+                name.textContent = currentUser.displayName || currentUser.username;   // textContent: no HTML injection
+                profileBtn.append(icon, name);
+
+                const outBtn = document.createElement('button');
+                outBtn.className = 'nav-icon-btn';
+                outBtn.title = 'ออกจากระบบ';
+                outBtn.setAttribute('aria-label', 'ออกจากระบบ');
+                outBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i>';
+                outBtn.addEventListener('click', logout);
+
+                userBar.append(profileBtn, outBtn);
             } else {
-                userBar.innerHTML = `
-                    <button onclick="openAuthModal('login')" class="user-btn primary">
-                        <i class="fa-solid fa-user"></i> เข้าสู่ระบบ
-                    </button>`;
+                const loginBtn = document.createElement('button');
+                loginBtn.className = 'user-btn primary';
+                loginBtn.innerHTML = '<i class="fa-solid fa-user"></i> เข้าสู่ระบบ';
+                loginBtn.addEventListener('click', () => openAuthModal('login'));
+                userBar.append(loginBtn);
             }
             loadHighScores();
         }
@@ -386,7 +431,14 @@
             box.classList.remove('hidden');
         }
 
-        function handleAuthSubmit(e) {
+        function startSession(rec) {
+            currentUser = { username: rec.username, displayName: rec.displayName || rec.username };
+            writeJSON('arcade_current_user', currentUser);
+            closeAuthModal();
+            renderUserBar();
+        }
+
+        async function handleAuthSubmit(e) {
             e.preventDefault();
             const username = document.getElementById('auth-username').value.trim();
             const password = document.getElementById('auth-password').value.trim();
@@ -398,28 +450,40 @@
 
             if (currentAuthMode === 'register') {
                 if (password !== confirmPassword) return showAuthError('รหัสผ่านทั้งสองช่องไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง');
-                if (db[username]) return showAuthError('ชื่อผู้ใช้นี้มีในระบบแล้ว กรุณาใช้ชื่ออื่น');
+                if (hasUser(db, username)) return showAuthError('ชื่อผู้ใช้นี้มีในระบบแล้ว กรุณาใช้ชื่ออื่น');
 
                 db[username] = {
-                    username, password,
-                    displayName: displayName || username,
-                    scores: { memory: null, pattern: 0 }
+                    username,
+                    passHash: await hashPassword(username, password),
+                    displayName: displayName || username
                 };
                 saveUsersDB(db);
-                currentUser = db[username];
+                startSession(db[username]);
             } else {
-                if (!db[username] || db[username].password !== password) return showAuthError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
-                currentUser = db[username];
-            }
+                const rec = hasUser(db, username) ? db[username] : null;
+                if (!rec) return showAuthError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
 
-            localStorage.setItem('arcade_current_user', JSON.stringify(currentUser));
-            closeAuthModal();
-            renderUserBar();
+                let ok = false;
+                if (rec.passHash) {
+                    ok = rec.passHash === await hashPassword(username, password);
+                } else if (typeof rec.password === 'string') {
+                    // legacy plain-text account: verify once, then migrate to a hash
+                    ok = rec.password === password;
+                    if (ok) {
+                        rec.passHash = await hashPassword(username, password);
+                        delete rec.password;
+                        delete rec.scores;
+                        saveUsersDB(db);
+                    }
+                }
+                if (!ok) return showAuthError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+                startSession(rec);
+            }
         }
 
         function logout() {
             currentUser = null;
-            localStorage.removeItem('arcade_current_user');
+            try { localStorage.removeItem('arcade_current_user'); } catch (e) {}
             renderUserBar();
         }
 
@@ -437,10 +501,10 @@
             if (!name) return;
 
             currentUser.displayName = name;
-            localStorage.setItem('arcade_current_user', JSON.stringify(currentUser));
+            writeJSON('arcade_current_user', currentUser);
 
             const db = getUsersDB();
-            if (db[currentUser.username]) {
+            if (hasUser(db, currentUser.username)) {
                 db[currentUser.username].displayName = name;
                 saveUsersDB(db);
             }
@@ -448,31 +512,31 @@
             renderUserBar();
         }
 
-        function readMap(key) {
-            try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { return {}; }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') { closeAuthModal(); closeProfileModal(); }
+        });
+
+        function fmtTime(s) {
+            return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
         }
 
         function loadHighScores() {
             const username = currentUser ? currentUser.username : 'guest';
+            const pick = (key) => {
+                const m = readJSON(key, {});
+                return Object.prototype.hasOwnProperty.call(m, username) ? m[username] : null;
+            };
 
-            let memoryTime = localStorage.getItem('hub_best_memory_time');
-            let patternLevel = localStorage.getItem('pattern_recall_high_score');
-
-            if (currentUser) {
-                const rec = getUsersDB()[currentUser.username];
-                if (rec && rec.scores) {
-                    memoryTime = rec.scores.memory || memoryTime;
-                    patternLevel = rec.scores.pattern || patternLevel;
-                }
-            }
-
-            document.getElementById('best-memory-time').textContent = memoryTime || '--:--';
+            const memorySec = pick('arcade_memory_scores');
+            const patternLevel = pick('arcade_pattern_scores');
+            document.getElementById('best-memory-time').textContent = memorySec ? fmtTime(memorySec) : '--:--';
             document.getElementById('best-pattern-level').textContent = patternLevel || '0';
-            const reflexMs = readMap('arcade_reflex_ms')[username];
-            document.getElementById('best-reflex-score').textContent = reflexMs ? reflexMs + ' ms' : '-- ms';
-            document.getElementById('best-arrow-score').textContent = readMap('arcade_override_scores')[username] || 0;
 
-            const scan = readMap('arcade_scan_scores');
+            const reflexMs = pick('arcade_reflex_ms');
+            document.getElementById('best-reflex-score').textContent = reflexMs ? reflexMs + ' ms' : '-- ms';
+            document.getElementById('best-arrow-score').textContent = pick('arcade_override_scores') || 0;
+
+            const scan = readJSON('arcade_scan_scores', {});
             const std = scan[username + '_STD'];
             const glitch = scan[username + '_GLITCH'];
             const parts = [];
@@ -480,10 +544,15 @@
             if (glitch) parts.push('GLITCH ' + glitch.toFixed(2) + 's');
             document.getElementById('best-scan-time').textContent = parts.length ? parts.join(' · ') : '--';
 
-            const typing = readMap('arcade_typing_scores');
+            // keys look like "<username>_<th|en>_<seconds>"; match the exact shape so
+            // user "a" never picks up the scores of user "a_b"
+            const typing = readJSON('arcade_typing_scores', {});
+            const prefix = username + '_';
             let bestWpm = 0;
             Object.keys(typing).forEach(k => {
-                if (k.indexOf(username + '_') === 0 && typing[k] > bestWpm) bestWpm = typing[k];
+                if (k.indexOf(prefix) !== 0) return;
+                if (!/^(th|en)_\d+$/.test(k.slice(prefix.length))) return;
+                if (typing[k] > bestWpm) bestWpm = typing[k];
             });
             document.getElementById('best-typing-wpm').textContent = bestWpm ? bestWpm + ' WPM' : '--';
         }

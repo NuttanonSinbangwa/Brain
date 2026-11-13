@@ -115,6 +115,7 @@
             }
             init() {
                 if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
             }
             tone(freq, type, duration, vol, delay = 0) {
                 try {
@@ -163,8 +164,25 @@
 
         const audio = new SynthAudio();
 
+        // --- storage: best level per user (map of username -> level) ---
+        function getUser() {
+            try { return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' }; }
+            catch (e) { return { username: 'guest' }; }
+        }
+        function readBestMap() {
+            try { return JSON.parse(localStorage.getItem('arcade_pattern_scores') || '{}'); }
+            catch (e) { return {}; }
+        }
+        function saveBest(value) {
+            try {
+                const map = readBestMap();
+                map[getUser().username] = value;
+                localStorage.setItem('arcade_pattern_scores', JSON.stringify(map));
+            } catch (e) {}
+        }
+
         let sequence = [], playerStep = 0, level = 1;
-        let highScore = parseInt(localStorage.getItem('pattern_recall_high_score')) || 0;
+        let highScore = parseInt(readBestMap()[getUser().username]) || 0;
         let isPlayingSequence = false, isGameActive = false;
 
         const tileIcons = ['fa-user', 'fa-envelope', 'fa-phone', 'fa-building', 'fa-calendar', 'fa-location-dot', 'fa-credit-card', 'fa-tag', 'fa-signature'];
@@ -261,7 +279,7 @@
                     setStatus('ถูกต้อง กำลังไปชุดถัดไป', 'watch');
                     if (level > highScore) {
                         highScore = level;
-                        localStorage.setItem('pattern_recall_high_score', highScore);
+                        saveBest(highScore);
                         bestEl.textContent = highScore;
                     }
                     level++;
@@ -279,6 +297,7 @@
             setStatus('ลำดับผิด', 'fail');
             setTimeout(() => board.classList.remove('shake'), 500);
 
+            // "reached" = the level the player failed on, "best" = highest level completed
             finalLevelEl.textContent = level;
             finalBestEl.textContent = highScore;
             startBtn.classList.remove('disabled');

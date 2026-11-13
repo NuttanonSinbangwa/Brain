@@ -128,11 +128,12 @@
             constructor() { this.ctx = null; this.muted = false; }
             init() {
                 if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
             }
             playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.1) {
                 if (this.muted) return;
-                this.init();
                 try {
+                    this.init();
                     const osc = this.ctx.createOscillator();
                     const gain = this.ctx.createGain();
                     osc.type = type;
@@ -168,6 +169,7 @@
 
         let cardsData = [], flippedCards = [], matchedPairs = 0, moves = 0;
         let timerInterval = null, secondsElapsed = 0, gameStarted = false, isProcessing = false;
+        let flipBackTimer = null;
 
         const board = document.getElementById('board');
         const movesEl = document.getElementById('moves-count');
@@ -205,6 +207,7 @@
 
         function initGame() {
             clearInterval(timerInterval);
+            clearTimeout(flipBackTimer);   // a pending flip-back from the old game must not touch the new one
             timerEl.textContent = '00:00';
             moves = 0; matchedPairs = 0;
             gameStarted = false; isProcessing = false;
@@ -260,7 +263,7 @@
                 }
             } else {
                 sound.playMismatch();
-                setTimeout(() => {
+                flipBackTimer = setTimeout(() => {
                     c1.classList.remove('flipped');
                     c2.classList.remove('flipped');
                     flippedCards = [];
@@ -269,12 +272,22 @@
             }
         }
 
+        // --- storage: best time per user (map of username -> seconds) ---
+        function getUser() {
+            try { return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' }; }
+            catch (e) { return { username: 'guest' }; }
+        }
+        function readBestMap() {
+            try { return JSON.parse(localStorage.getItem('arcade_memory_scores') || '{}'); }
+            catch (e) { return {}; }
+        }
         function saveBestTime() {
             try {
-                const best = parseInt(localStorage.getItem('hub_best_memory_seconds'));
-                if (!best || secondsElapsed < best) {
-                    localStorage.setItem('hub_best_memory_seconds', secondsElapsed);
-                    localStorage.setItem('hub_best_memory_time', fmt(secondsElapsed));
+                const user = getUser().username;
+                const map = readBestMap();
+                if (!map[user] || secondsElapsed < map[user]) {
+                    map[user] = secondsElapsed;
+                    localStorage.setItem('arcade_memory_scores', JSON.stringify(map));
                 }
             } catch (e) {}
         }

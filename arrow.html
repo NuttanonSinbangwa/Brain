@@ -162,19 +162,19 @@
         </div>
 
         <div class="dpad">
-            <button class="dir-btn btn-up" id="btn-UP" onclick="handleInput('UP')">
+            <button class="dir-btn btn-up" id="btn-UP">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
                 <span>W / ↑</span>
             </button>
-            <button class="dir-btn btn-left" id="btn-LEFT" onclick="handleInput('LEFT')">
+            <button class="dir-btn btn-left" id="btn-LEFT">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                 <span>A / ←</span>
             </button>
-            <button class="dir-btn btn-down" id="btn-DOWN" onclick="handleInput('DOWN')">
+            <button class="dir-btn btn-down" id="btn-DOWN">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
                 <span>S / ↓</span>
             </button>
-            <button class="dir-btn btn-right" id="btn-RIGHT" onclick="handleInput('RIGHT')">
+            <button class="dir-btn btn-right" id="btn-RIGHT">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 <span>D / →</span>
             </button>
@@ -189,17 +189,20 @@
                 <span class="tag-reverse">ย้อนเส้นทาง</span> · ส่งไป <strong>ตรงข้าม</strong> กับลูกศร<br><br>
                 รองรับปุ่มลูกศร, W A S D หรือแตะบนหน้าจอ
             </div>
-            <button class="btn" id="start-btn" onclick="startGame()">เริ่มงาน</button>
+            <button class="btn" id="start-btn">เริ่มงาน</button>
         </div>
     </div>
 
     <script>
         const DIRECTIONS = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
         const OPPOSITE = { UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT' };
-        const ROTATIONS = { UP: 'rotate(0deg)', RIGHT: 'rotate(90deg)', DOWN: 'rotate(180deg)', LEFT: 'rotate(270deg)' };
+        const ANGLES = { UP: 0, RIGHT: 90, DOWN: 180, LEFT: 270 };
+        const GAME_SECONDS = 45;
 
-        let score = 0, combo = 0, timeLeft = 45.0, timerInterval = null, isPlaying = false;
+        let score = 0, combo = 0, timeLeft = GAME_SECONDS, timerInterval = null, isPlaying = false;
+        let endAt = 0, penalty = 0;
         let currentMode = 'DIRECT', currentArrow = 'UP', muted = false;
+        let currentAngle = 0;
 
         const timerVal = document.getElementById('timer-val');
         const scoreVal = document.getElementById('score-val');
@@ -255,40 +258,62 @@
         }
 
         function getUser() {
-            return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' };
+            try { return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' }; }
+            catch (e) { return { username: 'guest' }; }
+        }
+        function readScores() {
+            try { return JSON.parse(localStorage.getItem('arcade_override_scores') || '{}'); }
+            catch (e) { return {}; }
         }
 
         function loadHighScore() {
-            const scores = JSON.parse(localStorage.getItem('arcade_override_scores') || '{}');
-            const best = scores[getUser().username] || 0;
+            const best = readScores()[getUser().username] || 0;
             bestRecord.textContent = `ผลดีที่สุด: ${best}`;
             return best;
         }
 
         function saveHighScore(newScore) {
             const user = getUser();
-            const scores = JSON.parse(localStorage.getItem('arcade_override_scores') || '{}');
+            const scores = readScores();
             if (newScore > (scores[user.username] || 0)) {
                 scores[user.username] = newScore;
-                localStorage.setItem('arcade_override_scores', JSON.stringify(scores));
+                try { localStorage.setItem('arcade_override_scores', JSON.stringify(scores)); } catch (e) {}
                 return true;
             }
             return false;
         }
 
+        function remaining() {
+            return Math.max(0, (endAt - performance.now()) / 1000 - penalty);
+        }
+
         function startGame() {
-            score = 0; combo = 0; timeLeft = 45.0; isPlaying = true;
+            score = 0; combo = 0; penalty = 0; isPlaying = true;
+            endAt = performance.now() + GAME_SECONDS * 1000;
             updateHUD();
-            timerVal.textContent = '45.0s';
+            timerVal.textContent = GAME_SECONDS.toFixed(1) + 's';
             overlay.style.display = 'none';
+            currentAngle = ANGLES[currentArrow];
             nextCommand();
 
             clearInterval(timerInterval);
             timerInterval = setInterval(() => {
-                timeLeft -= 0.1;
-                if (timeLeft <= 0) { timeLeft = 0; endGame(); }
+                timeLeft = remaining();
                 timerVal.textContent = timeLeft.toFixed(1) + 's';
-            }, 100);
+                if (timeLeft <= 0) endGame();
+            }, 50);
+        }
+
+        // rotate by the shortest path so the arrow never spins through other angles
+        function rotateTo(dir) {
+            const target = ANGLES[dir];
+            let diff = ((target - currentAngle) % 360 + 360) % 360;
+            if (diff > 180) diff -= 360;
+            currentAngle += diff;
+            arrowDisplay.style.transform = `scale(0.85) rotate(${currentAngle}deg)`;
+            requestAnimationFrame(() => {
+                arrowDisplay.style.transform = `scale(1) rotate(${currentAngle}deg)`;
+            });
         }
 
         function nextCommand() {
@@ -310,10 +335,7 @@
                 protocolBadge.textContent = 'ย้อนเส้นทาง · ส่งสวนทาง';
             }
 
-            arrowDisplay.style.transform = `scale(0.85) ${ROTATIONS[currentArrow]}`;
-            requestAnimationFrame(() => {
-                arrowDisplay.style.transform = `scale(1) ${ROTATIONS[currentArrow]}`;
-            });
+            rotateTo(currentArrow);
         }
 
         function handleInput(dir) {
@@ -333,11 +355,12 @@
                 playSound('hit');
             } else {
                 combo = 0;
-                timeLeft = Math.max(0, timeLeft - 2.0);
+                penalty += 2.0;
                 playSound('miss');
                 arena.classList.remove('shake-error');
                 void arena.offsetWidth;
                 arena.classList.add('shake-error');
+                if (remaining() <= 0) { updateHUD(); endGame(); return; }
             }
             updateHUD();
             nextCommand();
@@ -349,8 +372,10 @@
         }
 
         function endGame() {
+            if (!isPlaying) return;
             isPlaying = false;
             clearInterval(timerInterval);
+            timerVal.textContent = '0.0s';
             playSound('end');
 
             const isNewRecord = saveHighScore(score);
@@ -366,14 +391,29 @@
             overlay.style.display = 'flex';
         }
 
+        // pointerdown + preventDefault: no stuck focus, so Enter/Space can't re-trigger a button
+        ['UP', 'DOWN', 'LEFT', 'RIGHT'].forEach(d => {
+            document.getElementById('btn-' + d).addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                handleInput(d);
+            });
+        });
+        startBtn.addEventListener('click', () => { startBtn.blur(); startGame(); });
+
+        // e.code is layout-independent, so W/A/S/D works with a Thai keyboard too
+        const KEY_MAP = {
+            ArrowUp: 'UP', KeyW: 'UP',
+            ArrowDown: 'DOWN', KeyS: 'DOWN',
+            ArrowLeft: 'LEFT', KeyA: 'LEFT',
+            ArrowRight: 'RIGHT', KeyD: 'RIGHT'
+        };
         document.addEventListener('keydown', (e) => {
             if (!isPlaying) {
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startGame(); }
                 return;
             }
-            const key = e.key.toLowerCase();
-            const map = { arrowup: 'UP', w: 'UP', arrowdown: 'DOWN', s: 'DOWN', arrowleft: 'LEFT', a: 'LEFT', arrowright: 'RIGHT', d: 'RIGHT' };
-            if (map[key]) { e.preventDefault(); handleInput(map[key]); }
+            const dir = KEY_MAP[e.code];
+            if (dir) { e.preventDefault(); if (!e.repeat) handleInput(dir); }
         });
 
         soundBtn.addEventListener('click', () => {

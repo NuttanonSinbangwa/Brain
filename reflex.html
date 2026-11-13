@@ -156,7 +156,7 @@
                 ตรวจคำขอ 10 รายการ เมื่อสถานะเปลี่ยนสีให้ดำเนินการให้เร็วที่สุด<br><br>
                 <span class="g-txt">เขียว</span> · <b>อนุมัติ</b> (ปุ่มขึ้น)<br>
                 <span class="r-txt">แดง</span> · <b>ส่งกลับ</b> (ปุ่มลง)<br><br>
-                ดำเนินการก่อนสถานะขึ้นหรือเลือกผิดจะไม่นับเวลา รองรับ W S, ↑ ↓ หรือแตะปุ่ม
+                ดำเนินการก่อนสถานะขึ้นหรือเลือกผิดจะไม่นับเวลา ต้องตอบถูกอย่างน้อย 7 จาก 10 รายการจึงจะบันทึกสถิติ รองรับ W S, ↑ ↓ หรือแตะปุ่ม
             </div>
             <button class="btn" id="start-btn">เริ่มงาน</button>
         </div>
@@ -164,6 +164,7 @@
 
     <script>
         const TOTAL_ROUNDS = 10;
+        const MIN_CORRECT_TO_RECORD = 7;
         const TIMEOUT_MS = 2000;
 
         const stim = document.getElementById('stimulus');
@@ -217,18 +218,22 @@
 
         // --- storage (lower ms = better) ---
         function getUser() {
-            return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' };
+            try { return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' }; }
+            catch (e) { return { username: 'guest' }; }
+        }
+        function readMap() {
+            try { return JSON.parse(localStorage.getItem('arcade_reflex_ms') || '{}'); }
+            catch (e) { return {}; }
         }
         function getBestAvg() {
-            const m = JSON.parse(localStorage.getItem('arcade_reflex_ms') || '{}');
-            return m[getUser().username] || null;
+            return readMap()[getUser().username] || null;
         }
         function saveBestAvg(ms) {
             const user = getUser().username;
-            const m = JSON.parse(localStorage.getItem('arcade_reflex_ms') || '{}');
+            const m = readMap();
             if (!m[user] || ms < m[user]) {
                 m[user] = ms;
-                localStorage.setItem('arcade_reflex_ms', JSON.stringify(m));
+                try { localStorage.setItem('arcade_reflex_ms', JSON.stringify(m)); } catch (e) {}
                 return true;
             }
             return false;
@@ -359,13 +364,17 @@
             let title = 'เสร็จสิ้น';
             if (times.length) {
                 const avg = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
-                const isNew = saveBestAvg(avg);
+                const qualifies = times.length >= MIN_CORRECT_TO_RECORD;
+                const isNew = qualifies && saveBestAvg(avg);
                 if (isNew) title = 'ผลดีที่สุดใหม่';
                 const acc = Math.round((times.length / TOTAL_ROUNDS) * 100);
+                let note = '';
+                if (isNew) note = '<br>บันทึกผลดีที่สุดใหม่แล้ว';
+                else if (!qualifies) note = `<br>ตอบถูกไม่ถึง ${MIN_CORRECT_TO_RECORD} จาก ${TOTAL_ROUNDS} รายการ จึงไม่บันทึกสถิติ`;
                 html = `
                     เวลาดำเนินการเฉลี่ย<br>
                     <span class="big-num">${avg} ms</span><br>
-                    <span style="color:var(--muted);">${rating(avg)} · เร็วสุด ${Math.min(...times)} ms · แม่นยำ ${acc}%${isNew ? '<br>บันทึกผลดีที่สุดใหม่แล้ว' : ''}</span>`;
+                    <span style="color:var(--muted);">${rating(avg)} · เร็วสุด ${Math.min(...times)} ms · แม่นยำ ${acc}%${note}</span>`;
             } else {
                 html = `ไม่มีรายการที่ดำเนินการถูกต้อง<br><span style="color:var(--muted);">ลองอีกครั้ง จำไว้ เขียว = อนุมัติ, แดง = ส่งกลับ</span>`;
             }
@@ -385,15 +394,15 @@
             });
         });
 
+        // e.code is layout-independent, so W/S works with a Thai keyboard too
         document.addEventListener('keydown', (e) => {
             if (e.repeat) return;
-            const k = e.key.toLowerCase();
             if (state === 'idle') {
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startGame(); }
                 return;
             }
-            if (k === 'arrowup' || k === 'w') { e.preventDefault(); handleInput('UP'); }
-            else if (k === 'arrowdown' || k === 's') { e.preventDefault(); handleInput('DOWN'); }
+            if (e.code === 'ArrowUp' || e.code === 'KeyW') { e.preventDefault(); handleInput('UP'); }
+            else if (e.code === 'ArrowDown' || e.code === 'KeyS') { e.preventDefault(); handleInput('DOWN'); }
         });
 
         soundBtn.addEventListener('click', () => {
