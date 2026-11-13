@@ -64,6 +64,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 10px;
             background: var(--bg-soft);
             border-radius: 12px;
             padding: 10px 14px;
@@ -71,7 +72,8 @@
             font-size: 0.82rem;
             color: var(--muted);
         }
-        .best b { color: var(--ink); font-weight: 600; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+        .best b { color: var(--ink); font-weight: 600; font-size: 0.95rem; font-variant-numeric: tabular-nums; text-align: right; }
+        .best b.small { font-size: 0.8rem; }
 
         .user-btn {
             display: inline-flex; align-items: center; gap: 8px;
@@ -227,12 +229,27 @@
                     <div class="card-icon"><i class="fa-solid fa-list-ol"></i></div>
                     <span class="chip">Optical Scan</span>
                 </div>
-                <h2>Operation: Optical Sync</h2>
-                <p>ล็อกโฟกัสที่จุดกึ่งกลางเรดาร์ ตรวจจับและเคลียร์โหนด 01–25 ให้ไวที่สุด (ข้อผิดพลาดเพิ่มค่าหน่วงเวลา +1.5 วินาที</p>
+                <h2>Optical Sync</h2>
+                <p>ล็อกโฟกัสที่จุดกึ่งกลางตาราง ตรวจจับและกดโหนด 01–25 ให้ไวที่สุด (กดผิดบวกเวลา +1.5 วินาที)</p>
             </div>
             <div>
-                <div class="best"><span>ผลดีที่สุด</span><b id="best-arrow-score">0</b></div>
+                <div class="best"><span>เวลาดีที่สุด</span><b id="best-scan-time" class="small">--</b></div>
                 <a href="pa.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
+            </div>
+        </div>
+
+        <div class="game-card">
+            <div>
+                <div class="card-top">
+                    <div class="card-icon"><i class="fa-solid fa-keyboard"></i></div>
+                    <span class="chip">Typing Speed</span>
+                </div>
+                <h2>Rapid Input</h2>
+                <p>พิมพ์ข้อให้เร็วและแม่นยำ เลือกภาษาไทยหรืออังกฤษ และเลือกเวลา 30 / 60 / 120 วินาที</p>
+            </div>
+            <div>
+                <div class="best"><span>WPM สูงสุด</span><b id="best-typing-wpm">--</b></div>
+                <a href="typing.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
             </div>
         </div>
 
@@ -454,6 +471,21 @@
             const reflexMs = readMap('arcade_reflex_ms')[username];
             document.getElementById('best-reflex-score').textContent = reflexMs ? reflexMs + ' ms' : '-- ms';
             document.getElementById('best-arrow-score').textContent = readMap('arcade_override_scores')[username] || 0;
+
+            const scan = readMap('arcade_scan_scores');
+            const std = scan[username + '_STD'];
+            const glitch = scan[username + '_GLITCH'];
+            const parts = [];
+            if (std) parts.push('STD ' + std.toFixed(2) + 's');
+            if (glitch) parts.push('GLITCH ' + glitch.toFixed(2) + 's');
+            document.getElementById('best-scan-time').textContent = parts.length ? parts.join(' · ') : '--';
+
+            const typing = readMap('arcade_typing_scores');
+            let bestWpm = 0;
+            Object.keys(typing).forEach(k => {
+                if (k.indexOf(username + '_') === 0 && typing[k] > bestWpm) bestWpm = typing[k];
+            });
+            document.getElementById('best-typing-wpm').textContent = bestWpm ? bestWpm + ' WPM' : '--';
         }
 
         window.onload = renderUserBar;

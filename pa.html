@@ -3,391 +3,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Peripheral Scan - Visual Matrix Benchmark</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <title>Optical Sync - สแกนข้อมูลตาราง</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="nav.css">
+    <script src="theme.js"></script>
     <style>
-        :root {
-            --bg-color: #06080f;
-            --panel-bg: rgba(12, 18, 32, 0.92);
-            --primary: #00f3ff;
-            --accent: #ff0055;
-            --success: #00ff66;
-            --warning: #ffd000;
-            --text-main: #e0f7fa;
-            --text-muted: #5c768d;
+        .mode-badge {
+            display: inline-block;
+            padding: 5px 16px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 14px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            transition: background 0.2s, color 0.2s;
+        }
+        .mode-badge.glitch { background: var(--bad-soft); color: var(--bad); }
+        :root[data-theme="office"] .mode-badge { border-radius: 4px; }
+
+        .matrix.shifting .cell:not(.cleared) { animation: glitch 0.35s ease-out; }
+        @keyframes glitch {
+            0% { transform: scale(0.8) rotate(-4deg); opacity: 0.3; background: var(--bad-soft); }
+            60% { transform: scale(1.06) rotate(2deg); opacity: 1; }
+            100% { transform: none; }
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(circle at 50% 0%, rgba(0, 243, 255, 0.08) 0%, transparent 60%),
-                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
-            background-size: 100% 100%, 24px 24px, 24px 24px;
-            color: var(--text-main);
-            font-family: 'Prompt', 'Kanit', system-ui, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            overflow-x: hidden;
-        }
-
-        .back-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 243, 255, 0.05);
-            border: 1px solid rgba(0, 243, 255, 0.3);
-            color: var(--primary);
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            transition: all 0.25s ease;
-            z-index: 100;
-        }
-
-        .back-btn:hover {
-            background: rgba(0, 243, 255, 0.15);
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .game-container {
-            width: 100%;
-            max-width: 520px;
-            background: var(--panel-bg);
-            border: 1px solid rgba(0, 243, 255, 0.4);
-            border-radius: 14px;
-            box-shadow: 0 0 40px rgba(0, 243, 255, 0.12), inset 0 0 20px rgba(0, 243, 255, 0.05);
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            position: relative;
-        }
-
-        .header {
-            text-align: center;
-            border-bottom: 1px solid rgba(0, 243, 255, 0.2);
-            padding-bottom: 12px;
-        }
-
-        .header h1 {
-            font-family: 'Prompt', 'Kanit', system-ui, sans-serif;
-            font-weight: 900;
-            font-size: 1.55rem;
-            letter-spacing: 2px;
-            color: var(--primary);
-            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
-        }
-
-        .header p {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        /* Mode Switcher */
         .mode-bar {
-            display: flex;
-            gap: 10px;
-            background: rgba(0, 0, 0, 0.5);
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            background: var(--bg-soft);
+            border-radius: 14px;
             padding: 5px;
-            border-radius: 8px;
-            border: 1px solid rgba(0, 243, 255, 0.15);
+            margin-bottom: 14px;
         }
-
         .mode-btn {
-            flex: 1;
-            background: transparent;
+            padding: 9px 8px;
             border: 1px solid transparent;
-            color: var(--text-muted);
-            padding: 8px;
-            font-family: 'Prompt', 'Kanit', system-ui, sans-serif;
-            font-size: 0.78rem;
-            font-weight: 700;
-            border-radius: 6px;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 0.82rem;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
         }
-
+        .mode-btn small { display: block; font-size: 0.68rem; font-weight: 300; opacity: 0.85; }
+        .mode-btn:hover { color: var(--ink); }
         .mode-btn.active {
-            background: rgba(0, 243, 255, 0.15);
-            border-color: var(--primary);
-            color: var(--primary);
-            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
-        }
-
-        .mode-btn.active.glitch-mode {
-            background: rgba(255, 0, 85, 0.15);
+            background: var(--surface);
             border-color: var(--accent);
             color: var(--accent);
-            box-shadow: 0 0 10px rgba(255, 0, 85, 0.25);
         }
 
-        /* HUD Stats */
-        .hud {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            background: rgba(0, 0, 0, 0.45);
-            border: 1px solid rgba(0, 243, 255, 0.15);
-            border-radius: 8px;
-            padding: 10px;
-            text-align: center;
-        }
-
-        .hud-label {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            letter-spacing: 1px;
-        }
-
-        .hud-value {
-            font-family: 'Prompt', 'Kanit', system-ui, sans-serif;
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-top: 2px;
-        }
-
-        #target-val { color: var(--success); }
-        #timer-val { color: var(--warning); }
-        #best-val { color: var(--primary); }
-
-        /* 5x5 Matrix Grid */
-        .matrix-wrapper {
+        .matrix {
             position: relative;
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            max-width: 420px;
-            margin: 0 auto;
-            background: rgba(0, 0, 0, 0.65);
-            border: 2px solid rgba(0, 243, 255, 0.3);
-            border-radius: 12px;
-            padding: 10px;
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            grid-template-rows: repeat(5, 1fr);
             gap: 8px;
+            grid-template-rows: repeat(5, 1fr);
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1 / 1;
+            margin: 0 auto 16px;
+        }
+        .cell {
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-soft);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            color: var(--ink);
+            font-size: 1.15rem;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+        }
+        .cell:hover:not(.cleared) { border-color: var(--accent); }
+        .cell:active:not(.cleared) { transform: scale(0.94); }
+        .cell.cleared {
+            background: var(--good-soft);
+            border-color: transparent;
+            color: var(--good);
+            opacity: 0.55;
+            cursor: default;
+        }
+        .cell.wrong-flash {
+            background: var(--bad-soft) !important;
+            border-color: var(--bad) !important;
+            color: var(--bad) !important;
+            animation: shake 0.3s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
 
-        /* Subtle Center Focus Crosshair */
         .center-focus {
             position: absolute;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
+            width: 14px; height: 14px;
             transform: translate(-50%, -50%);
-            width: 14px;
-            height: 14px;
             pointer-events: none;
             z-index: 5;
-            opacity: 0.35;
+            opacity: 0.5;
         }
         .center-focus::before, .center-focus::after {
             content: '';
             position: absolute;
-            background: var(--accent);
+            background: var(--bad);
+            border-radius: 2px;
         }
         .center-focus::before { top: 6px; left: 0; width: 14px; height: 2px; }
         .center-focus::after { top: 0; left: 6px; width: 2px; height: 14px; }
 
-        .cell {
-            background: rgba(0, 243, 255, 0.05);
-            border: 1px solid rgba(0, 243, 255, 0.25);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Prompt', 'Kanit', system-ui, sans-serif;
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--text-main);
-            cursor: pointer;
-            transition: background 0.12s, transform 0.1s, border-color 0.15s;
-        }
+        .tip { color: var(--muted); font-size: 0.8rem; font-weight: 300; }
+        .tip i { margin-right: 6px; color: var(--accent); }
 
-        .cell:hover:not(.cleared) {
-            background: rgba(0, 243, 255, 0.18);
-            border-color: var(--primary);
-            box-shadow: 0 0 12px rgba(0, 243, 255, 0.3);
-        }
-
-        .cell:active:not(.cleared) {
-            transform: scale(0.92);
-        }
-
-        .cell.cleared {
-            background: rgba(0, 255, 102, 0.06);
-            border-color: rgba(0, 255, 102, 0.15);
-            color: rgba(0, 255, 102, 0.25);
-            cursor: default;
-        }
-
-        .cell.wrong-flash {
-            background: rgba(255, 0, 85, 0.35) !important;
-            border-color: var(--accent) !important;
-            color: #fff !important;
-            animation: shake 0.25s ease-in-out;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-4px); }
-            75% { transform: translateX(4px); }
-        }
-
-        .footer-tip {
-            text-align: center;
-            font-size: 0.78rem;
-            color: var(--text-muted);
-        }
-
-        /* Overlay Screen */
         .overlay {
             position: absolute;
             inset: 0;
-            background: rgba(6, 8, 15, 0.95);
-            backdrop-filter: blur(4px);
-            border-radius: 14px;
+            background: var(--surface);
+            border-radius: 24px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 28px;
-            text-align: center;
-            z-index: 20;
-            gap: 15px;
+            padding: 28px 24px;
+            gap: 14px;
+            z-index: 10;
+            overflow-y: auto;
         }
-
-        .overlay h2 {
-            font-family: 'Prompt', 'Kanit', system-ui, sans-serif;
-            font-size: 1.5rem;
-            color: var(--primary);
-        }
-
+        .overlay h2 { font-size: 1.5rem; font-weight: 600; }
+        .best-record { font-size: 0.85rem; color: var(--muted); }
         .rules-box {
-            background: rgba(0, 243, 255, 0.05);
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            border-radius: 8px;
-            padding: 15px;
-            font-size: 0.86rem;
-            line-height: 1.6;
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            font-weight: 300;
             text-align: left;
-            color: var(--text-main);
+            width: 100%;
         }
+        .rules-box b { font-weight: 600; }
+        .big-num { font-size: 2.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-        .start-btn {
-            background: var(--primary);
-            color: var(--bg-color);
-            border: none;
-            padding: 12px 32px;
-            font-family: 'Prompt', 'Kanit', system-ui, sans-serif;
-            font-weight: 900;
-            font-size: 0.95rem;
-            border-radius: 6px;
-            cursor: pointer;
-            letter-spacing: 2px;
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
-            transition: all 0.2s;
-            margin-top: 4px;
-        }
+        :root[data-theme="office"] .cell,
+        :root[data-theme="office"] .mode-btn { border-radius: 4px; }
+        :root[data-theme="office"] .mode-bar { border-radius: 6px; }
 
-        .start-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.7);
+        @media (max-width: 480px) {
+            .matrix { gap: 6px; }
+            .cell { font-size: 1rem; border-radius: 10px; }
         }
     </style>
 </head>
 <body>
+    <nav class="game-nav" style="--nav-max: 520px">
+        <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
+        <div class="nav-brand">WORKDESK</div>
+        <div class="nav-actions">
+            <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
+        </div>
+    </nav>
 
-    <a href="index.html" class="back-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        หน้าหลัก
-    </a>
+    <div class="panel" style="--w: 520px">
+        <h1 class="title">Optical Sync</h1>
+        <p class="subtitle">กวาดสายตาหาข้อมูลบนตาราง กดเรียงลำดับ 01 → 25</p>
 
-    <div class="game-container">
-        <div class="header">
-            <h1>PERIPHERAL SCAN</h1>
-            <p>วัดความไวในการกวาดสายตาและประมวลผลภาพมุมกว้าง (01 → 25)</p>
+        <div id="mode-badge" class="mode-badge">โหมด Standard</div>
+
+        <div class="stats" style="--cols: 3">
+            <div><span class="stat-label">ถัดไป</span><span id="target-val" class="stat-value">01</span></div>
+            <div><span class="stat-label">เวลา</span><span id="timer-val" class="stat-value">0.00s</span></div>
+            <div><span class="stat-label">ดีที่สุด</span><span id="best-val" class="stat-value">--</span></div>
         </div>
 
-        <div class="mode-bar">
-            <button class="mode-btn active" id="btn-mode-std" onclick="setMode('STD')">STANDARD (นิ่ง)</button>
-            <button class="mode-btn" id="btn-mode-glitch" onclick="setMode('GLITCH')">GLITCH SHIFT (สลับตำแหน่ง)</button>
-        </div>
-
-        <div class="hud">
-            <div>
-                <div class="hud-label">NEXT TARGET</div>
-                <div class="hud-value" id="target-val">01</div>
-            </div>
-            <div>
-                <div class="hud-label">ELAPSED TIME</div>
-                <div class="hud-value" id="timer-val">0.00s</div>
-            </div>
-            <div>
-                <div class="hud-label">BEST RECORD</div>
-                <div class="hud-value" id="best-val">--</div>
-            </div>
-        </div>
-
-        <div class="matrix-wrapper" id="matrix-grid">
+        <div class="matrix" id="matrix-grid">
             <div class="center-focus"></div>
         </div>
 
-        <div class="footer-tip" id="footer-tip">
-            เทคนิค: จ้องจุดกึ่งกลาง (+) แล้วใช้หางตากวาดหาตัวเลขพร้อมกันทั้งตาราง
-        </div>
+        <p class="tip"><i class="fa-solid fa-bullseye"></i>จ้องจุดกึ่งกลาง (+) แล้วใช้หางตากวาดหาตัวเลข</p>
 
-        <!-- Overlay Screen -->
         <div class="overlay" id="overlay">
-            <h2 id="overlay-title">VISUAL MATRIX SCAN</h2>
-            <div class="rules-box" id="overlay-desc">
-                ทดสอบความเร็วในการกวาดสายตาหาข้อมูลบนตาราง 5x5:<br><br>
-                🔹 กดไล่ลำดับตัวเลขตั้งแต่ <strong>01 ไปจนถึง 25</strong> ให้เร็วที่สุด<br>
-                🔸 หากกดผิดตัว จะโดนบวกเวลาเพิ่ม <strong>+1.50 วินาที</strong><br>
-                ⚡ <strong>โหมด GLITCH SHIFT:</strong> ทุกๆ 5 ตัวเลข ตารางจะสุ่มสลับตำแหน่งใหม่!
+            <h2 id="overlay-title">Optical Sync</h2>
+            <div class="best-record" id="best-record">ผลดีที่สุด: --</div>
+            <div class="mode-bar" id="mode-bar">
+                <button class="mode-btn active" id="btn-mode-std" onclick="setMode('STD')">Standard<small>ตำแหน่งนิ่ง</small></button>
+                <button class="mode-btn" id="btn-mode-glitch" onclick="setMode('GLITCH')">Glitch Shift<small>สลับตำแหน่งทุก 5 ตัว</small></button>
             </div>
-            <button class="start-btn" id="start-btn" onclick="startGame()">เริ่มสแกนตาราง</button>
+            <div class="rules-box" id="overlay-desc">
+                กดตัวเลขในตาราง 5×5 ตั้งแต่ <b>01 ถึง 25</b> ให้เร็วที่สุด<br><br>
+                กดผิดตัว บวกเวลาเพิ่ม <b>+1.50 วินาที</b><br>
+                โหมด <b>Glitch Shift</b> ทุก 5 ตัวเลข ตัวเลขที่เหลือจะสลับตำแหน่งใหม่
+            </div>
+            <button class="btn" id="start-btn" onclick="startGame()">เริ่มงาน</button>
         </div>
     </div>
 
     <script>
-        let currentMode = 'STD'; // 'STD' หรือ 'GLITCH'
+        let currentMode = 'STD';
         let nextNumber = 1;
         let numbersArray = [];
         let startTime = 0;
         let penaltyTime = 0;
         let timerInterval = null;
         let isPlaying = false;
+        let muted = false;
 
         const matrixGrid = document.getElementById('matrix-grid');
         const targetVal = document.getElementById('target-val');
         const timerVal = document.getElementById('timer-val');
         const bestVal = document.getElementById('best-val');
+        const bestRecord = document.getElementById('best-record');
         const overlay = document.getElementById('overlay');
         const overlayTitle = document.getElementById('overlay-title');
         const overlayDesc = document.getElementById('overlay-desc');
         const startBtn = document.getElementById('start-btn');
+        const soundBtn = document.getElementById('sound-btn');
+        const soundIcon = document.getElementById('sound-icon');
 
-        // Web Audio API
         let audioCtx = null;
         function playSound(type) {
+            if (muted) return;
             try {
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -399,69 +245,70 @@
 
                 if (type === 'hit') {
                     osc.type = 'sine';
-                    const freq = 420 + (nextNumber * 18);
-                    osc.frequency.setValueAtTime(freq, now);
+                    osc.frequency.setValueAtTime(420 + nextNumber * 18, now);
                     gain.gain.setValueAtTime(0.07, now);
                     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-                    osc.start(now);
-                    osc.stop(now + 0.06);
+                    osc.start(now); osc.stop(now + 0.06);
                 } else if (type === 'shift') {
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(300, now);
                     osc.frequency.linearRampToValueAtTime(600, now + 0.12);
                     gain.gain.setValueAtTime(0.09, now);
                     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-                    osc.start(now);
-                    osc.stop(now + 0.12);
+                    osc.start(now); osc.stop(now + 0.12);
                 } else if (type === 'miss') {
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(140, now);
-                    osc.frequency.linearRampToValueAtTime(75, now + 0.18);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(80, now + 0.2);
                     gain.gain.setValueAtTime(0.12, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-                    osc.start(now);
-                    osc.stop(now + 0.18);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.start(now); osc.stop(now + 0.2);
                 } else if (type === 'win') {
-                    [523.25, 659.25, 783.99, 1046.50].forEach((f, idx) => {
+                    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
                         const o = audioCtx.createOscillator();
                         const g = audioCtx.createGain();
-                        o.connect(g);
-                        g.connect(audioCtx.destination);
-                        o.frequency.setValueAtTime(f, now + idx * 0.08);
-                        g.gain.setValueAtTime(0.1, now + idx * 0.08);
-                        g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.18);
-                        o.start(now + idx * 0.08);
-                        o.stop(now + idx * 0.08 + 0.18);
+                        o.connect(g); g.connect(audioCtx.destination);
+                        o.frequency.setValueAtTime(f, now + i * 0.08);
+                        g.gain.setValueAtTime(0.1, now + i * 0.08);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.18);
+                        o.start(now + i * 0.08); o.stop(now + i * 0.08 + 0.18);
                     });
                 }
             } catch (e) {}
         }
 
+        function getUser() {
+            try { return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' }; }
+            catch (e) { return { username: 'guest' }; }
+        }
+        function readScores() {
+            try { return JSON.parse(localStorage.getItem('arcade_scan_scores') || '{}'); }
+            catch (e) { return {}; }
+        }
+
         function setMode(mode) {
             currentMode = mode;
-            document.getElementById('btn-mode-std').className = mode === 'STD' ? 'mode-btn active' : 'mode-btn';
-            document.getElementById('btn-mode-glitch').className = mode === 'GLITCH' ? 'mode-btn active glitch-mode' : 'mode-btn';
+            document.getElementById('btn-mode-std').className = 'mode-btn' + (mode === 'STD' ? ' active' : '');
+            document.getElementById('btn-mode-glitch').className = 'mode-btn' + (mode === 'GLITCH' ? ' active' : '');
+            const badge = document.getElementById('mode-badge');
+            badge.textContent = mode === 'GLITCH' ? 'โหมด Glitch Shift · สลับตำแหน่งทุก 5 ตัว' : 'โหมด Standard';
+            badge.className = 'mode-badge' + (mode === 'GLITCH' ? ' glitch' : '');
             loadBestTime();
-            if (isPlaying) startGame();
         }
 
         function loadBestTime() {
-            const user = JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' };
-            const scores = JSON.parse(localStorage.getItem('arcade_scan_scores') || '{}');
-            const key = `${user.username}_${currentMode}`;
-            const best = scores[key];
+            const best = readScores()[`${getUser().username}_${currentMode}`];
             bestVal.textContent = best ? `${best.toFixed(2)}s` : '--';
+            bestRecord.textContent = `ผลดีที่สุด: ${best ? best.toFixed(2) + ' s' : '--'}`;
             return best || null;
         }
 
         function saveBestTime(finalSeconds) {
-            const user = JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' };
-            const scores = JSON.parse(localStorage.getItem('arcade_scan_scores') || '{}');
-            const key = `${user.username}_${currentMode}`;
-            const currentBest = scores[key];
-            if (!currentBest || finalSeconds < currentBest) {
+            const scores = readScores();
+            const key = `${getUser().username}_${currentMode}`;
+            if (!scores[key] || finalSeconds < scores[key]) {
                 scores[key] = finalSeconds;
-                localStorage.setItem('arcade_scan_scores', JSON.stringify(scores));
+                try { localStorage.setItem('arcade_scan_scores', JSON.stringify(scores)); } catch (e) {}
                 return true;
             }
             return false;
@@ -484,36 +331,34 @@
             targetVal.textContent = '01';
             timerVal.textContent = '0.00s';
             overlay.style.display = 'none';
-
             renderGrid();
 
             startTime = performance.now();
             clearInterval(timerInterval);
             timerInterval = setInterval(() => {
-                const elapsed = ((performance.now() - startTime) / 1000) + penaltyTime;
+                const elapsed = (performance.now() - startTime) / 1000 + penaltyTime;
                 timerVal.textContent = `${elapsed.toFixed(2)}s`;
             }, 30);
         }
 
         function renderGrid() {
-            // เก็บจุดเล็งตรงกลางไว้ แล้วล้างเฉพาะปุ่มตัวเลข
             matrixGrid.innerHTML = '<div class="center-focus"></div>';
-
             numbersArray.forEach((num) => {
                 const cell = document.createElement('div');
                 const isCleared = num < nextNumber;
                 cell.className = isCleared ? 'cell cleared' : 'cell';
                 cell.textContent = String(num).padStart(2, '0');
-
                 if (!isCleared) {
-                    cell.onclick = () => handleCellClick(num, cell);
+                    cell.addEventListener('pointerdown', (e) => {
+                        e.preventDefault();
+                        handleCellClick(num, cell);
+                    });
                 }
-
                 matrixGrid.appendChild(cell);
             });
         }
 
-        function handleCellClick(num, cellElement) {
+        function handleCellClick(num, cell) {
             if (!isPlaying) return;
 
             if (num === nextNumber) {
@@ -521,48 +366,51 @@
                 nextNumber++;
 
                 if (nextNumber > 25) {
+                    cell.classList.add('cleared');
                     endGame();
                     return;
                 }
 
                 targetVal.textContent = String(nextNumber).padStart(2, '0');
 
-                // ถ้าเป็นโหมด GLITCH SHIFT ทุกๆ 5 ตัวเลขที่กดถูก จะสลับตำแหน่งตัวเลขที่ยังไม่ถูกเคลียร์
                 if (currentMode === 'GLITCH' && (nextNumber - 1) % 5 === 0) {
                     playSound('shift');
                     shuffleRemaining();
                     renderGrid();
+                    matrixGrid.classList.remove('shifting');
+                    void matrixGrid.offsetWidth;
+                    matrixGrid.classList.add('shifting');
                 } else {
-                    cellElement.classList.add('cleared');
-                    cellElement.onclick = null;
+                    cell.classList.add('cleared');
                 }
             } else {
-                // กดผิดตัว: บวกเวลาเพิ่ม 1.5 วินาที
                 playSound('miss');
                 penaltyTime += 1.5;
-                cellElement.classList.remove('wrong-flash');
-                void cellElement.offsetWidth;
-                cellElement.classList.add('wrong-flash');
+                cell.classList.remove('wrong-flash');
+                void cell.offsetWidth;
+                cell.classList.add('wrong-flash');
             }
         }
 
         function shuffleRemaining() {
-            // เก็บตำแหน่งของช่องที่เคลียร์ไปแล้วไว้ที่เดิม สลับเฉพาะช่องที่ยังเหลืออยู่
-            const remainingIndices = [];
-            const remainingValues = [];
-
-            numbersArray.forEach((val, idx) => {
-                if (val >= nextNumber) {
-                    remainingIndices.push(idx);
-                    remainingValues.push(val);
-                }
+            const idxs = [], vals = [];
+            numbersArray.forEach((v, i) => {
+                if (v >= nextNumber) { idxs.push(i); vals.push(v); }
             });
+            shuffle(vals);
+            idxs.forEach((gi, i) => { numbersArray[gi] = vals[i]; });
+        }
 
-            shuffle(remainingValues);
-
-            remainingIndices.forEach((gridIdx, i) => {
-                numbersArray[gridIdx] = remainingValues[i];
-            });
+        function rating(sec) {
+            if (currentMode === 'STD') {
+                if (sec < 14) return 'ไวมาก';
+                if (sec < 20) return 'ไวกว่าค่าเฉลี่ย';
+                if (sec < 28) return 'ปกติ';
+                return 'ลองฝึกจ้องจุดกึ่งกลางอีกนิด';
+            }
+            if (sec < 22) return 'ไวมาก';
+            if (sec < 32) return 'ไวกว่าค่าเฉลี่ย';
+            return 'ลองฝึกอีกนิด';
         }
 
         function endGame() {
@@ -573,32 +421,34 @@
             const finalSeconds = Number((((performance.now() - startTime) / 1000) + penaltyTime).toFixed(2));
             timerVal.textContent = `${finalSeconds.toFixed(2)}s`;
 
-            const isNewRecord = saveBestTime(finalSeconds);
+            const isNew = saveBestTime(finalSeconds);
             loadBestTime();
 
-            let rank = '';
-            if (currentMode === 'STD') {
-                if (finalSeconds < 14) rank = '👁️ QUANTUM SCANNER (สายตาระดับพระเจ้า)';
-                else if (finalSeconds < 20) rank = '🦅 EAGLE EYE (กวาดสายตาเฉียบคมมาก)';
-                else if (finalSeconds < 28) rank = '💻 STANDARD OPERATIVE (เกณฑ์มาตรฐาน)';
-                else rank = '🐢 OPTICAL LAG (ลองฝึกจ้องจุดกึ่งกลางดูนะ!)';
-            } else {
-                if (finalSeconds < 22) rank = '⚡ GLITCH MASTER (ปรับตัวเหนือมนุษย์)';
-                else if (finalSeconds < 32) rank = '🛡️ CYBER TRACKER (ตามเป้าหมายแม่นยำ)';
-                else rank = '🌀 SIGNAL LOST (โดนตารางหลอกตาเข้าให้แล้ว)';
-            }
-
-            overlayTitle.textContent = isNewRecord ? 'NEW RECORD!' : 'SCAN COMPLETE';
+            overlayTitle.textContent = isNew ? 'ผลดีที่สุดใหม่' : 'เสร็จสิ้น';
+            document.getElementById('mode-bar').style.display = 'grid';
             overlayDesc.innerHTML = `
-                สแกนครบ 25 โหนดเรียบร้อย!<br><br>
-                เวลาสุทธิของคุณ: <strong style="color:var(--success); font-size:1.45rem;">${finalSeconds.toFixed(2)}s</strong><br>
-                <span style="color:var(--primary); font-size:0.88rem;">${rank}</span><br><br>
-                ${isNewRecord ? '<span style="color:var(--warning);">★ บันทึกสถิติความเร็วสูงสุดใหม่แล้ว ★</span>' : 'ลองกดใหม่อีกครั้งเพื่อทำลายสถิติ!'}
-            `;
-            startBtn.textContent = 'สแกนใหม่อีกครั้ง';
+                เวลาสุทธิ<br>
+                <span class="big-num">${finalSeconds.toFixed(2)} s</span><br>
+                <span style="color:var(--muted);">${rating(finalSeconds)}${isNew ? '<br>บันทึกผลดีที่สุดใหม่แล้ว' : ''}</span>`;
+            startBtn.textContent = 'ทำอีกรอบ';
             overlay.style.display = 'flex';
         }
 
+        document.addEventListener('keydown', (e) => {
+            if (!isPlaying && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                startGame();
+            }
+        });
+
+        soundBtn.addEventListener('click', () => {
+            muted = !muted;
+            soundIcon.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('muted', muted);
+        });
+
+        numbersArray = shuffle(Array.from({ length: 25 }, (_, i) => i + 1));
+        renderGrid();
         loadBestTime();
     </script>
 </body>

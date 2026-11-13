@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapid Input</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="nav.css">
+    <script src="theme.js"></script>
+    <style>
+        .typewrap {
+            position: relative;
+            margin-bottom: 14px;
+        }
+        .typebox {
+            height: 168px;
+            overflow: hidden;
+            background: var(--bg-soft);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 14px 18px;
+            text-align: left;
+            font-size: 1.2rem;
+            line-height: 2.1;
+            font-weight: 400;
+            word-break: break-word;
+            transition: border-color 0.2s;
+        }
+        .typewrap.focus .typebox { border-color: var(--accent); }
+        .typebox .ch { color: var(--muted); border-radius: 3px; }
+        .typebox .ch.ok { color: var(--good); }
+        .typebox .ch.bad { color: var(--bad); background: var(--bad-soft); }
+        .typebox .ch.cur { background: var(--accent-soft); box-shadow: inset 0 -2px 0 var(--accent); color: var(--ink); }
+
+        .typewrap textarea {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            resize: none;
+            border: 0;
+            cursor: text;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 300;
+        }
+        .hint i { margin-right: 6px; color: var(--accent); }
+
+        .seg {
+            width: 100%;
+            display: grid;
+            gap: 6px;
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 5px;
+        }
+        .seg.two { grid-template-columns: repeat(2, 1fr); }
+        .seg.three { grid-template-columns: repeat(3, 1fr); }
+        .seg-btn {
+            padding: 9px 8px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .seg-btn:hover { color: var(--ink); }
+        .seg-btn.active {
+            background: var(--surface);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .seg-label {
+            width: 100%;
+            text-align: left;
+            font-size: 0.72rem;
+            color: var(--muted);
+            margin-bottom: -6px;
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--surface);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 24px;
+            gap: 14px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+        .overlay h2 { font-size: 1.5rem; font-weight: 600; }
+        .best-record { font-size: 0.85rem; color: var(--muted); }
+        .rules-box {
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            font-weight: 300;
+            text-align: left;
+            width: 100%;
+        }
+        .rules-box b { font-weight: 600; }
+        .big-num { font-size: 2.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        :root[data-theme="office"] .typebox,
+        :root[data-theme="office"] .seg { border-radius: 6px; }
+        :root[data-theme="office"] .seg-btn { border-radius: 4px; }
+
+        @media (max-width: 480px) {
+            .typebox { font-size: 1.05rem; padding: 12px 14px; height: 156px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="game-nav" style="--nav-max: 560px">
+        <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
+        <div class="nav-brand">WORKDESK</div>
+        <div class="nav-actions">
+            <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
+        </div>
+    </nav>
+
+    <div class="panel" style="--w: 560px; min-height: 520px;">
+        <h1 class="title">Rapid Input</h1>
+        <p class="subtitle">พิมพ์ข้อความตามให้เร็วและแม่นยำที่สุดภายในเวลาที่กำหนด</p>
+
+        <div class="stats" style="--cols: 3">
+            <div><span class="stat-label">เวลา</span><span id="time-val" class="stat-value">60s</span></div>
+            <div><span class="stat-label">WPM</span><span id="wpm-val" class="stat-value">0</span></div>
+            <div><span class="stat-label">แม่นยำ</span><span id="acc-val" class="stat-value">100%</span></div>
+        </div>
+
+        <div class="typewrap" id="typewrap">
+            <div class="typebox" id="typebox"><div id="words"></div></div>
+            <textarea id="input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="พิมพ์ที่นี่"></textarea>
+        </div>
+
+        <p class="hint" id="hint"><i class="fa-solid fa-keyboard"></i>เริ่มจับเวลาเมื่อพิมพ์ตัวแรก คลิกที่กรอบข้อความเพื่อพิมพ์</p>
+
+        <div class="overlay" id="overlay">
+            <h2 id="overlay-title">Rapid Input</h2>
+            <div class="best-record" id="best-record">ผลดีที่สุด: --</div>
+
+            <div class="seg-label">ภาษา</div>
+            <div class="seg two" id="seg-lang">
+                <button class="seg-btn active" data-lang="th">ภาษาไทย</button>
+                <button class="seg-btn" data-lang="en">English</button>
+            </div>
+
+            <div class="seg-label">ระยะเวลา</div>
+            <div class="seg three" id="seg-dur">
+                <button class="seg-btn" data-dur="30">30 วินาที</button>
+                <button class="seg-btn active" data-dur="60">60 วินาที</button>
+                <button class="seg-btn" data-dur="120">120 วินาที</button>
+            </div>
+
+            <div class="rules-box" id="overlay-desc">
+                พิมพ์ตามข้อความที่แสดง ตัวอักษรที่พิมพ์ถูกเป็นสีเขียว ผิดเป็นสีแดง แก้ไขด้วย Backspace ได้<br>
+                คิดคะแนนเป็น <b>WPM</b> (5 ตัวอักษร = 1 คำ) และ <b>ความแม่นยำ</b>
+            </div>
+            <button class="btn" id="start-btn">เริ่มงาน</button>
+        </div>
+    </div>
+
+    <script>
+        const TEXTS = {
+            th: [
+                'วันนี้ทีมงานประชุมสรุปยอดขายประจำเดือนและวางแผนงานสัปดาห์หน้า',
+                'กรุณาตรวจสอบเอกสารให้ครบถ้วนก่อนส่งให้ฝ่ายบัญชีภายในวันศุกร์',
+                'ขอเชิญทุกท่านเข้าร่วมประชุมออนไลน์เวลาเก้าโมงเช้าตามกำหนดการเดิม',
+                'รายงานผลการดำเนินงานไตรมาสนี้เป็นไปตามเป้าหมายที่ตั้งไว้',
+                'เราจะส่งใบเสนอราคาให้ลูกค้าพร้อมรายละเอียดสินค้าทั้งหมดภายในวันนี้',
+                'การจัดการเวลาที่ดีช่วยให้ทำงานเสร็จตรงเวลาและมีคุณภาพมากขึ้น',
+                'ฝ่ายบุคคลแจ้งปรับปรุงขั้นตอนการลาพักร้อนผ่านระบบออนไลน์แล้ว',
+                'โปรดบันทึกข้อมูลลูกค้าให้ถูกต้องและครบถ้วนเพื่อป้องกันความผิดพลาด',
+                'ทีมการตลาดเตรียมแผนโปรโมชันใหม่สำหรับเปิดตัวสินค้าในเดือนหน้า',
+                'ขอบคุณที่ติดต่อเข้ามา เราจะตรวจสอบเรื่องและแจ้งผลกลับภายในสองวันทำการ',
+                'การสำรองข้อมูลสำคัญเป็นประจำช่วยลดความเสี่ยงจากข้อมูลสูญหาย',
+                'ผู้จัดการอนุมัติงบประมาณโครงการใหม่หลังจากพิจารณาแผนงานเรียบร้อยแล้ว'
+            ],
+            en: [
+                'Please review the attached report and send your feedback before Friday afternoon.',
+                'The team meeting has been moved to ten o\'clock in the main conference room.',
+                'Thank you for contacting us, we will reply to your request within two business days.',
+                'Our sales figures for this quarter are higher than we expected last month.',
+                'Remember to save your work often and keep a backup copy of every important file.',
+                'The new project schedule includes weekly updates and a final review at the end.',
+                'Could you confirm the delivery address and the invoice number for this order?',
+                'Good communication helps the whole team solve problems faster and work together.',
+                'We are planning to launch the updated website early next month after testing.',
+                'All employees should complete the online safety training by the end of the week.',
+                'The manager approved the budget request and asked for a short summary of costs.',
+                'A clear plan and a calm mind make busy days feel much easier to handle.'
+            ]
+        };
+
+        let lang = 'th', duration = 60;
+        let target = '', typed = '';
+        let totalKeys = 0, correctKeys = 0;
+        let isPlaying = false, started = false;
+        let startTime = 0, timerInterval = null;
+        let pool = [], spans = [];
+        let muted = false;
+
+        const $ = (id) => document.getElementById(id);
+        const wordsEl = $('words'), boxEl = $('typebox'), wrapEl = $('typewrap'), inputEl = $('input');
+        const timeVal = $('time-val'), wpmVal = $('wpm-val'), accVal = $('acc-val');
+        const overlay = $('overlay'), overlayTitle = $('overlay-title'), overlayDesc = $('overlay-desc');
+        const bestRecord = $('best-record'), startBtn = $('start-btn'), hint = $('hint');
+        const soundBtn = $('sound-btn'), soundIcon = $('sound-icon');
+
+        // --- audio ---
+        let audioCtx = null;
+        function beep(freq, dur, type = 'sine', vol = 0.05) {
+            if (muted) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const t = audioCtx.currentTime;
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t); o.stop(t + dur);
+            } catch (e) {}
+        }
+        const sfx = {
+            key: () => beep(520, 0.03, 'sine', 0.035),
+            bad: () => beep(150, 0.12, 'triangle', 0.08),
+            end: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.09), i * 90))
+        };
+
+        // --- storage ---
+        function getUser() {
+            try { return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' }; }
+            catch (e) { return { username: 'guest' }; }
+        }
+        function readScores() {
+            try { return JSON.parse(localStorage.getItem('arcade_typing_scores') || '{}'); }
+            catch (e) { return {}; }
+        }
+        function bestKey() { return `${getUser().username}_${lang}_${duration}`; }
+        function showBest() {
+            const b = readScores()[bestKey()];
+            bestRecord.textContent = `ผลดีที่สุด (${lang === 'th' ? 'ไทย' : 'EN'} ${duration}s): ${b ? b + ' WPM' : '--'}`;
+        }
+        function saveBest(wpm) {
+            const scores = readScores();
+            const k = bestKey();
+            if (!scores[k] || wpm > scores[k]) {
+                scores[k] = wpm;
+                try { localStorage.setItem('arcade_typing_scores', JSON.stringify(scores)); } catch (e) {}
+                return true;
+            }
+            return false;
+        }
+
+        // --- text ---
+        function shuffle(a) {
+            a = [...a];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+        function nextSentence() {
+            if (!pool.length) pool = shuffle(TEXTS[lang]);
+            return pool.pop();
+        }
+        function ensureText(minLen) {
+            let added = '';
+            while (target.length + added.length < minLen) added += nextSentence() + ' ';
+            if (!added) return;
+            target += added;
+            for (const c of added) {
+                const s = document.createElement('span');
+                s.className = 'ch';
+                s.textContent = c;
+                wordsEl.appendChild(s);
+                spans.push(s);
+            }
+        }
+
+        function paint(prevLen) {
+            const from = Math.max(0, Math.min(prevLen, typed.length) - 1);
+            const to = Math.min(spans.length, Math.max(prevLen, typed.length) + 1);
+            for (let i = from; i < to; i++) {
+                const s = spans[i];
+                if (i < typed.length) s.className = 'ch ' + (typed[i] === target[i] ? 'ok' : 'bad');
+                else if (i === typed.length) s.className = 'ch cur';
+                else s.className = 'ch';
+            }
+            const cur = spans[typed.length];
+            if (cur) {
+                const lh = parseFloat(getComputedStyle(boxEl).lineHeight) || 40;
+                boxEl.scrollTop = Math.max(0, cur.offsetTop - boxEl.offsetTop - lh);
+            }
+        }
+
+        // --- stats ---
+        function countCorrect() {
+            let n = 0;
+            for (let i = 0; i < typed.length; i++) if (typed[i] === target[i]) n++;
+            return n;
+        }
+        function currentWpm(elapsedSec) {
+            if (elapsedSec <= 0) return 0;
+            return Math.round(countCorrect() / 5 / (elapsedSec / 60));
+        }
+        function currentAcc() {
+            return totalKeys ? Math.round((correctKeys / totalKeys) * 100) : 100;
+        }
+        function updateStats() {
+            const elapsed = started ? Math.min(duration, (performance.now() - startTime) / 1000) : 0;
+            timeVal.textContent = Math.max(0, Math.ceil(duration - elapsed)) + 's';
+            wpmVal.textContent = started ? currentWpm(Math.max(elapsed, 1)) : 0;
+            accVal.textContent = currentAcc() + '%';
+        }
+
+        // --- flow ---
+        function startGame() {
+            clearInterval(timerInterval);
+            typed = ''; target = ''; totalKeys = 0; correctKeys = 0;
+            started = false; isPlaying = true;
+            pool = []; spans = [];
+            wordsEl.innerHTML = '';
+            boxEl.scrollTop = 0;
+            inputEl.value = '';
+            ensureText(400);
+            paint(0);
+            updateStats();
+            hint.innerHTML = '<i class="fa-solid fa-keyboard"></i>เริ่มจับเวลาเมื่อพิมพ์ตัวแรก';
+            overlay.style.display = 'none';
+            inputEl.focus();
+        }
+
+        function beginTimer() {
+            started = true;
+            startTime = performance.now();
+            hint.innerHTML = '<i class="fa-solid fa-keyboard"></i>กำลังจับเวลา';
+            timerInterval = setInterval(() => {
+                updateStats();
+                if ((performance.now() - startTime) / 1000 >= duration) endGame();
+            }, 100);
+        }
+
+        function endGame() {
+            if (!isPlaying) return;
+            isPlaying = false;
+            clearInterval(timerInterval);
+            inputEl.blur();
+            sfx.end();
+
+            const wpm = currentWpm(duration);
+            const acc = currentAcc();
+            const isNew = wpm > 0 && saveBest(wpm);
+            timeVal.textContent = '0s';
+            wpmVal.textContent = wpm;
+            accVal.textContent = acc + '%';
+
+            overlayTitle.textContent = isNew ? 'ผลดีที่สุดใหม่' : 'หมดเวลา';
+            overlayDesc.innerHTML = `
+                ความเร็วในการพิมพ์<br>
+                <span class="big-num">${wpm} WPM</span><br>
+                <span style="color:var(--muted);">${rating(wpm)} · แม่นยำ ${acc}% · ถูก ${countCorrect()} ตัวอักษร${isNew ? '<br>บันทึกผลดีที่สุดใหม่แล้ว' : ''}</span>`;
+            startBtn.textContent = 'ทำอีกรอบ';
+            showBest();
+            overlay.style.display = 'flex';
+        }
+
+        function rating(wpm) {
+            if (wpm >= 60) return 'ไวมาก';
+            if (wpm >= 40) return 'ไวกว่าค่าเฉลี่ย';
+            if (wpm >= 20) return 'ปกติ';
+            return 'ลองฝึกอีกนิด';
+        }
+
+        // --- input ---
+        inputEl.addEventListener('input', () => {
+            if (!isPlaying) return;
+            const prevLen = typed.length;
+            let v = inputEl.value.replace(/\n/g, '');
+            if (v !== inputEl.value) inputEl.value = v;
+            if (!started && v.length) beginTimer();
+
+            let lastOk = true;
+            for (let i = typed.length; i < v.length; i++) {
+                totalKeys++;
+                if (v[i] === target[i]) correctKeys++; else lastOk = false;
+            }
+            if (v.length > typed.length) (lastOk ? sfx.key : sfx.bad)();
+
+            typed = v;
+            ensureText(typed.length + 300);
+            paint(prevLen);
+            updateStats();
+        });
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key.startsWith('Arrow') || e.key === 'Home' || e.key === 'End') e.preventDefault();
+        });
+        inputEl.addEventListener('paste', (e) => e.preventDefault());
+        inputEl.addEventListener('focus', () => wrapEl.classList.add('focus'));
+        inputEl.addEventListener('blur', () => wrapEl.classList.remove('focus'));
+
+        // --- config ---
+        $('seg-lang').addEventListener('click', (e) => {
+            const b = e.target.closest('[data-lang]');
+            if (!b) return;
+            lang = b.dataset.lang;
+            [...$('seg-lang').children].forEach(x => x.classList.toggle('active', x === b));
+            showBest();
+        });
+        $('seg-dur').addEventListener('click', (e) => {
+            const b = e.target.closest('[data-dur]');
+            if (!b) return;
+            duration = parseInt(b.dataset.dur, 10);
+            [...$('seg-dur').children].forEach(x => x.classList.toggle('active', x === b));
+            timeVal.textContent = duration + 's';
+            showBest();
+        });
+
+        startBtn.addEventListener('click', startGame);
+        document.addEventListener('keydown', (e) => {
+            if (!isPlaying && overlay.style.display !== 'none' && (e.key === 'Enter')) {
+                e.preventDefault();
+                startGame();
+            }
+        });
+        soundBtn.addEventListener('click', () => {
+            muted = !muted;
+            soundIcon.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('muted', muted);
+        });
+
+        // placeholder text behind the start screen
+        ensureText(400);
+        paint(0);
+        timeVal.textContent = duration + 's';
+        showBest();
+    </script>
+</body>
+</html>
