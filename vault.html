@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vault Code - เจาะรหัสตู้นิรภัย</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="nav.css">
+    <script src="theme.js"></script>
+    <style>
+        .banner {
+            min-height: 26px;
+            margin-bottom: 10px;
+            font-size: 0.92rem;
+            color: var(--muted);
+        }
+        .banner.ok { color: var(--good); font-weight: 500; }
+        .banner.bad { color: var(--bad); font-weight: 500; }
+
+        .history {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-width: 300px;
+            margin: 0 auto 16px;
+        }
+        .hrow {
+            display: grid;
+            grid-template-columns: 22px repeat(var(--len, 4), 1fr);
+            gap: 6px;
+            align-items: center;
+        }
+        .hrow .no { font-size: 0.7rem; color: var(--muted); text-align: left; }
+        .tile {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-soft);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            font-size: 1.15rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: var(--ink);
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
+        }
+        .hrow.cur .tile { background: var(--surface); }
+        .hrow.cur .tile.on { border-color: var(--accent); }
+        .tile.g { background: var(--good); border-color: var(--good); color: #fff; }
+        .tile.y { background: var(--warn); border-color: var(--warn); color: #fff; }
+        .tile.x { background: var(--line); border-color: var(--line); color: var(--muted); }
+        .hrow.shake { animation: shake 0.3s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        :root[data-theme="office"] .tile { border-radius: 4px; }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            max-width: 420px;
+            margin: 0 auto 6px;
+        }
+        .key {
+            height: 46px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            color: var(--ink);
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.1s, border-color 0.1s, transform 0.1s, opacity 0.2s;
+        }
+        .key:hover { border-color: var(--accent); }
+        .key:active { transform: scale(0.95); }
+        .key.g { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+        .key.y { background: var(--warn); border-color: var(--warn); color: #fff; }
+        .key.x { opacity: 0.3; }
+        .key.act { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-size: 0.85rem; }
+        .key.back { color: var(--muted); }
+        :root[data-theme="office"] .key { border-radius: 4px; }
+
+        .seg { width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; background: var(--bg-soft); border-radius: 14px; padding: 5px; }
+        .seg-btn { padding: 9px 8px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--muted); font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+        .seg-btn small { display: block; font-size: 0.68rem; font-weight: 300; opacity: 0.85; }
+        .seg-btn:hover { color: var(--ink); }
+        .seg-btn.active { background: var(--surface); border-color: var(--accent); color: var(--accent); }
+        :root[data-theme="office"] .seg { border-radius: 6px; }
+        :root[data-theme="office"] .seg-btn { border-radius: 4px; }
+
+        .tip { color: var(--muted); font-size: 0.8rem; font-weight: 300; margin-top: 8px; }
+        .tip i { margin-right: 6px; color: var(--accent); }
+        .legend { display: flex; justify-content: center; gap: 14px; font-size: 0.75rem; color: var(--muted); margin-bottom: 12px; }
+        .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+        .legend .lg { background: var(--good); }
+        .legend .ly { background: var(--warn); }
+        .legend .lx { background: var(--line); }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--surface);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 24px;
+            gap: 14px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+        .overlay h2 { font-size: 1.5rem; font-weight: 600; }
+        .best-record { font-size: 0.85rem; color: var(--muted); }
+        .rules-box {
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            font-weight: 300;
+            text-align: left;
+            width: 100%;
+        }
+        .rules-box b { font-weight: 600; }
+        .big-num { font-size: 2.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body>
+    <nav class="game-nav" style="--nav-max: 520px">
+        <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
+        <div class="nav-brand">WORKDESK</div>
+        <div class="nav-actions">
+            <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
+        </div>
+    </nav>
+
+    <div class="panel" style="--w: 520px; min-height: 640px;">
+        <h1 class="title">Vault Code</h1>
+        <p class="subtitle">เจาะรหัสตู้นิรภัยด้วยการอนุมานจากผลตรวจแต่ละครั้ง</p>
+
+        <div class="stats" style="--cols: 3">
+            <div><span class="stat-label">ตู้ที่</span><span id="code-val" class="stat-value">0/3</span></div>
+            <div><span class="stat-label">ครั้งที่เหลือ</span><span id="left-val" class="stat-value">8</span></div>
+            <div><span class="stat-label">คะแนน</span><span id="score-val" class="stat-value">0</span></div>
+        </div>
+
+        <div class="legend">
+            <span><i class="lg"></i>ถูกตัว ถูกตำแหน่ง</span>
+            <span><i class="ly"></i>มีเลขนี้ ผิดตำแหน่ง</span>
+            <span><i class="lx"></i>ไม่มีเลขนี้</span>
+        </div>
+
+        <div class="banner" id="banner">กดเริ่มงานเพื่อเริ่มเจาะรหัส</div>
+        <div class="history" id="history"></div>
+        <div class="keypad" id="keypad"></div>
+        <p class="tip"><i class="fa-solid fa-lightbulb"></i><span id="tip-text">รหัสเป็นเลข 0–9 <b>ไม่ซ้ำกัน</b> 4 ตัว</span> (ตอนทายใส่เลขซ้ำได้ · พิมพ์ด้วยคีย์บอร์ดได้ Enter = ตรวจ)</p>
+
+        <div class="overlay" id="overlay">
+            <h2 id="overlay-title">Vault Code</h2>
+            <div class="best-record" id="best-record">ผลดีที่สุด: 0</div>
+            <div class="seg" id="seg-mode">
+                <button class="seg-btn active" data-mode="STD">4 หลัก<small>ทายได้ 8 ครั้ง</small></button>
+                <button class="seg-btn" data-mode="HARD">5 หลัก<small>ทายได้ 10 ครั้ง</small></button>
+            </div>
+            <div class="rules-box" id="overlay-desc">
+                มีตู้นิรภัย <b>3 ใบ</b> แต่ละใบมีรหัสเลข 0–9 <b>ไม่ซ้ำกัน</b> ทายได้ใบละ 8 ครั้ง (4 หลัก) หรือ 10 ครั้ง (5 หลัก)<br>
+                หลังทายแต่ละครั้งจะมีสีบอกใบ้ ใช้ตรรกะตัดตัวเลือกออก ทุกคำตอบควร <b>สอดคล้องกับใบ้ที่ได้มาแล้ว</b><br><br>
+                ยิ่งเปิดได้ในจำนวนครั้งน้อยและเร็ว คะแนนยิ่งสูง (ใบละสูงสุด ~900 / ~1,100) เลขที่ตัดออกแล้วบนแป้นจะจางลง
+                และท้ายเกมจะบอกว่าคุณทายสอดคล้องกับใบ้กี่ครั้ง
+            </div>
+            <button class="btn" id="start-btn">เริ่มงาน</button>
+        </div>
+    </div>
+
+    <script>
+        const VAULTS = 3;
+        const MODES = {
+            STD: { len: 4, tries: 8, key: 'arcade_vault_scores', pass: [1900, 1400, 800] },
+            HARD: { len: 5, tries: 10, key: 'arcade_vault5_scores', pass: [2000, 1500, 900] }
+        };
+        let mode = 'STD', LEN = 4, MAX_TRIES = 8;
+
+        const $ = (id) => document.getElementById(id);
+        const historyEl = $('history'), keypadEl = $('keypad'), banner = $('banner');
+        const codeVal = $('code-val'), leftVal = $('left-val'), scoreVal = $('score-val');
+        const overlay = $('overlay'), overlayTitle = $('overlay-title'), overlayDesc = $('overlay-desc');
+        const bestRecord = $('best-record'), startBtn = $('start-btn');
+        const soundBtn = $('sound-btn'), soundIcon = $('sound-icon');
+
+        let playing = false, locked = false, muted = false;
+        let vault = 0, secret = [], tries = 0, input = [], score = 0, codeStart = 0, solvedCount = 0;
+        let keyState = {}, guesses = [], consistent = 0, checked = 0;
+        let rows = [], nextTimer = null;
+
+        // --- audio ---
+        let audioCtx = null;
+        function beep(freq, dur, type = 'sine', vol = 0.06) {
+            if (muted) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const t = audioCtx.currentTime;
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t); o.stop(t + dur);
+            } catch (e) {}
+        }
+        const sfx = {
+            key: () => beep(500, 0.03, 'sine', 0.04),
+            submit: () => beep(380, 0.08, 'triangle', 0.07),
+            deny: () => beep(180, 0.12, 'triangle', 0.09),
+            open: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => beep(f, 0.15, 'triangle', 0.09), i * 70)),
+            lock: () => beep(130, 0.35, 'triangle', 0.13),
+            end: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.09), i * 90))
+        };
+
+        // --- storage ---
+        function getUser() {
+            try { return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' }; }
+            catch (e) { return { username: 'guest' }; }
+        }
+        function readScores() {
+            try { return JSON.parse(localStorage.getItem(MODES[mode].key) || '{}'); }
+            catch (e) { return {}; }
+        }
+        function showBest() { bestRecord.textContent = `ผลดีที่สุด: ${readScores()[getUser().username] || 0}`; }
+        function saveBest(v) {
+            const s = readScores(), u = getUser().username;
+            if (v > (s[u] || 0)) {
+                s[u] = v;
+                try { localStorage.setItem(MODES[mode].key, JSON.stringify(s)); } catch (e) {}
+                return true;
+            }
+            return false;
+        }
+
+        // --- logic ---
+        function genSecret() {
+            const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            for (let i = digits.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [digits[i], digits[j]] = [digits[j], digits[i]];
+            }
+            return digits.slice(0, LEN);
+        }
+        function evaluate(guess, sec = secret) {
+            const res = Array(LEN).fill('x');
+            const pool = {};
+            for (let i = 0; i < LEN; i++) {
+                if (guess[i] === sec[i]) res[i] = 'g';
+                else pool[sec[i]] = (pool[sec[i]] || 0) + 1;
+            }
+            for (let i = 0; i < LEN; i++) {
+                if (res[i] === 'g') continue;
+                if (pool[guess[i]] > 0) { res[i] = 'y'; pool[guess[i]]--; }
+            }
+            return res;
+        }
+
+        // --- render ---
+        function buildKeypad() {
+            keypadEl.innerHTML = '';
+            const mk = (label, cls, handler, data) => {
+                const b = document.createElement('button');
+                b.className = 'key ' + cls;
+                b.innerHTML = label;
+                if (data !== undefined) b.dataset.d = data;
+                b.addEventListener('pointerdown', (e) => { e.preventDefault(); handler(); });
+                keypadEl.appendChild(b);
+            };
+            for (let d = 1; d <= 9; d++) mk(String(d), '', () => typeDigit(d), d);
+            mk('<i class="fa-solid fa-delete-left"></i>', 'back', backspace);
+            mk('0', '', () => typeDigit(0), 0);
+            mk('ตรวจ', 'act', submit);
+        }
+        function paintKeys() {
+            keypadEl.querySelectorAll('.key[data-d]').forEach(b => {
+                const st = keyState[b.dataset.d];
+                b.className = 'key' + (st ? ' ' + st : '');
+            });
+        }
+        function buildHistory() {
+            historyEl.innerHTML = '';
+            historyEl.style.setProperty('--len', LEN);
+            rows = [];
+            for (let r = 0; r < MAX_TRIES; r++) {
+                const row = document.createElement('div');
+                row.className = 'hrow';
+                row.innerHTML = `<span class="no">${r + 1}</span>` + '<div class="tile"></div>'.repeat(LEN);
+                historyEl.appendChild(row);
+                rows.push(row);
+            }
+        }
+        function renderCurrent() {
+            rows.forEach((row, r) => {
+                if (r === tries) {
+                    row.classList.add('cur');
+                    const tiles = row.querySelectorAll('.tile');
+                    tiles.forEach((t, i) => {
+                        t.textContent = input[i] !== undefined ? input[i] : '';
+                        t.classList.toggle('on', i === input.length);
+                    });
+                } else {
+                    row.classList.remove('cur');
+                }
+            });
+        }
+        function hud() {
+            codeVal.textContent = `${Math.min(vault, VAULTS)}/${VAULTS}`;
+            leftVal.textContent = Math.max(0, MAX_TRIES - tries);
+            scoreVal.textContent = score;
+        }
+        function setBanner(text, cls = '') { banner.className = 'banner ' + cls; banner.textContent = text; }
+
+        // --- input ---
+        function typeDigit(d) {
+            if (!playing || locked || input.length >= LEN) return;
+            input.push(d);
+            sfx.key();
+            renderCurrent();
+        }
+        function backspace() {
+            if (!playing || locked || !input.length) return;
+            input.pop();
+            renderCurrent();
+        }
+        function submit() {
+            if (!playing || locked) return;
+            if (input.length < LEN) {
+                sfx.deny();
+                const row = rows[tries];
+                row.classList.remove('shake');
+                void row.offsetWidth;
+                row.classList.add('shake');
+                setBanner(`กรอกให้ครบ ${LEN} หลักก่อน`, 'bad');
+                return;
+            }
+            sfx.submit();
+            const guess = input.slice();
+            const res = evaluate(guess);
+            // reasoning check: could this guess still be the secret, given every earlier clue?
+            if (guesses.length) {
+                checked++;
+                if (guesses.every(g => evaluate(g.guess, guess).join('') === g.res.join(''))) consistent++;
+            }
+            guesses.push({ guess, res });
+            const tiles = rows[tries].querySelectorAll('.tile');
+            guess.forEach((d, i) => {
+                tiles[i].textContent = d;
+                tiles[i].className = 'tile ' + res[i];
+                const prev = keyState[d];
+                if (res[i] === 'g') keyState[d] = 'g';
+                else if (res[i] === 'y' && prev !== 'g') keyState[d] = 'y';
+                else if (res[i] === 'x' && !prev) keyState[d] = 'x';
+            });
+            paintKeys();
+            rows[tries].classList.remove('cur');
+            tries++;
+            input = [];
+
+            if (res.every(r => r === 'g')) return solved();
+            if (tries >= MAX_TRIES) return failed();
+            setBanner('ยังไม่ถูก ใช้สีใบ้ตัดตัวเลือก', '');
+            hud();
+            renderCurrent();
+        }
+
+        // --- flow ---
+        function newVault() {
+            locked = false;
+            secret = genSecret();
+            tries = 0; input = []; keyState = {}; guesses = [];
+            codeStart = performance.now();
+            buildHistory();
+            paintKeys();
+            setBanner(`ตู้ที่ ${vault + 1} · ทายรหัส ${LEN} หลัก`);
+            hud();
+            renderCurrent();
+        }
+
+        function solved() {
+            locked = true;
+            const sec = (performance.now() - codeStart) / 1000;
+            const base = (MAX_TRIES + 1 - tries) * 100;
+            const bonus = Math.max(0, Math.round(100 - sec));
+            const gain = base + bonus;
+            score += gain;
+            solvedCount++;
+            vault++;
+            sfx.open();
+            hud();
+            setBanner(`ปลดล็อกแล้ว! ใช้ ${tries} ครั้ง +${gain}`, 'ok');
+            nextTimer = setTimeout(afterVault, 1500);
+        }
+
+        function failed() {
+            locked = true;
+            vault++;
+            sfx.lock();
+            hud();
+            setBanner(`ล็อกถาวร รหัสคือ ${secret.join('')}`, 'bad');
+            nextTimer = setTimeout(afterVault, 2400);
+        }
+
+        function afterVault() {
+            if (vault >= VAULTS) endGame();
+            else newVault();
+        }
+
+        function startGame() {
+            clearTimeout(nextTimer);
+            vault = 0; score = 0; solvedCount = 0; consistent = 0; checked = 0;
+            overlay.style.display = 'none';
+            playing = true;
+            newVault();
+        }
+
+        function rating(s) {
+            const t = MODES[mode].pass;
+            if (s >= t[0]) return 'อนุมานได้ยอดเยี่ยม';
+            if (s >= t[1]) return 'ไวกว่าค่าเฉลี่ย';
+            if (s >= t[2]) return 'ปกติ';
+            return 'ลองฝึกตัดตัวเลือกอีกนิด';
+        }
+
+        function endGame() {
+            playing = false;
+            sfx.end();
+            const isNew = saveBest(score);
+            overlayTitle.textContent = isNew ? 'ผลดีที่สุดใหม่' : 'เสร็จสิ้น';
+            overlayDesc.innerHTML = `
+                คะแนนรวม<br>
+                <span class="big-num">${score}</span><br>
+                <span style="color:var(--muted);">${rating(score)} · เปิดได้ ${solvedCount}/${VAULTS} ใบ<br>ทายสอดคล้องกับใบ้เดิม ${consistent}/${checked} ครั้ง${isNew ? '<br>บันทึกผลดีที่สุดใหม่แล้ว' : ''}</span>`;
+            startBtn.textContent = 'ทำอีกรอบ';
+            showBest();
+            overlay.style.display = 'flex';
+        }
+
+        // --- events ---
+        // e.code is layout-independent: digit keys also work with a Thai keyboard layout
+        document.addEventListener('keydown', (e) => {
+            if (!playing) {
+                if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); startGame(); }
+                return;
+            }
+            const m = /^(?:Digit|Numpad)([0-9])$/.exec(e.code);
+            if (m) { e.preventDefault(); if (!e.repeat) typeDigit(parseInt(m[1], 10)); }
+            else if (e.code === 'Backspace') { e.preventDefault(); backspace(); }
+            else if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); if (!e.repeat) submit(); }
+        });
+        startBtn.addEventListener('click', () => { startBtn.blur(); startGame(); });
+        soundBtn.addEventListener('click', () => {
+            muted = !muted;
+            soundIcon.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('muted', muted);
+        });
+
+        function applyMode() {
+            LEN = MODES[mode].len; MAX_TRIES = MODES[mode].tries;
+            $('tip-text').innerHTML = `รหัสเป็นเลข 0–9 <b>ไม่ซ้ำกัน</b> ${LEN} ตัว`;
+            leftVal.textContent = MAX_TRIES;
+            buildHistory();
+            showBest();
+        }
+        $('seg-mode').addEventListener('click', (e) => {
+            const b = e.target.closest('[data-mode]');
+            if (!b || playing) return;
+            mode = b.dataset.mode;
+            [...$('seg-mode').children].forEach(x => x.classList.toggle('active', x === b));
+            applyMode();
+        });
+
+        buildKeypad();
+        applyMode();
+    </script>
+</body>
+</html>

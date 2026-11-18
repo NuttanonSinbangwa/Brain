@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Filter - กรองสัญญาณรบกวน</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="nav.css">
+    <script src="theme.js"></script>
+    <style>
+        .stage {
+            height: 300px;
+            background: var(--bg-soft);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            overflow: hidden;
+            transition: background 0.1s, border-color 0.1s;
+        }
+        /* the whole arrow group is moved around inside the stage each trial */
+        .cluster {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            will-change: transform;
+        }
+        .stage.ok { background: var(--good-soft); border-color: var(--good); }
+        .stage.bad { background: var(--bad-soft); border-color: var(--bad); }
+        :root[data-theme="office"] .stage { border-radius: 6px; }
+
+        .row {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.1rem;
+            color: var(--ink);
+            height: 52px;
+        }
+        .row i { width: 34px; text-align: center; }
+        /* vertical trial: the main line is a column (up/down arrows), noise columns sit on its sides */
+        .cluster.v { flex-direction: row; gap: 14px; }
+        .cluster.v .row { flex-direction: column; height: auto; gap: 6px; font-size: 1.7rem; }
+        .cluster.v .row i { width: 34px; height: 30px; line-height: 30px; }
+        .cluster.v .noise-box { flex-direction: row; gap: 6px; }
+        .cluster.v .row.noise { flex-direction: column; height: auto; gap: 4px; font-size: 1.2rem; }
+        .cluster.v .row.noise i { width: 28px; height: 24px; line-height: 24px; }
+        .fix { font-size: 2rem; color: var(--muted); font-weight: 300; }
+        .pointer { height: 16px; font-size: 0.8rem; color: var(--accent); width: 34px; text-align: center; }
+
+        .stage.busy { height: auto; min-height: 440px; }
+        .stage.busy .cluster { gap: 4px; }
+        .noise-box { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .row.noise { font-size: 1.35rem; height: 32px; gap: 14px; }
+        .row.noise i { width: 34px; }
+
+        .seg {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 5px;
+        }
+        .seg-btn {
+            padding: 9px 8px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .seg-btn small { display: block; font-size: 0.68rem; font-weight: 300; opacity: 0.85; }
+        .seg-btn:hover { color: var(--ink); }
+        .seg-btn.active { background: var(--surface); border-color: var(--accent); color: var(--accent); }
+        :root[data-theme="office"] .seg { border-radius: 6px; }
+        :root[data-theme="office"] .seg-btn { border-radius: 4px; }
+
+        @media (max-width: 480px) {
+            .row { gap: 8px; font-size: 1.7rem; }
+            .row i { width: 28px; }
+            .row.noise { gap: 8px; font-size: 1.15rem; }
+            .row.noise i { width: 28px; }
+        }
+
+        .fb {
+            min-height: 24px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+        .fb.ok { color: var(--good); font-weight: 500; }
+        .fb.bad { color: var(--bad); font-weight: 500; }
+
+        .pad {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            max-width: 360px;
+            margin: 0 auto 6px;
+        }
+        .pad-btn {
+            height: 72px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            color: var(--ink);
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: background 0.1s, border-color 0.1s, transform 0.1s;
+        }
+        .pad-btn i { font-size: 1.2rem; }
+        .pad-btn span { font-size: 0.68rem; color: var(--muted); font-weight: 300; }
+        .pad-btn:hover { border-color: var(--accent); }
+        .pad-btn:active, .pad-btn.press {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--on-accent);
+            transform: scale(0.97);
+        }
+        .pad-btn:active span, .pad-btn.press span { color: var(--on-accent); }
+        :root[data-theme="office"] .pad-btn { border-radius: 4px; }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--surface);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 24px;
+            gap: 14px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+        .overlay h2 { font-size: 1.5rem; font-weight: 600; }
+        .best-record { font-size: 0.85rem; color: var(--muted); }
+        .rules-box {
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            font-weight: 300;
+            text-align: left;
+            width: 100%;
+        }
+        .rules-box b { font-weight: 600; }
+        .big-num { font-size: 2.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .demo { font-size: 1.1rem; letter-spacing: 6px; color: var(--ink); }
+        .demo b { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <nav class="game-nav" style="--nav-max: 520px">
+        <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
+        <div class="nav-brand">WORKDESK</div>
+        <div class="nav-actions">
+            <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
+        </div>
+    </nav>
+
+    <div class="panel" style="--w: 520px; min-height: 520px;">
+        <h1 class="title">Focus Filter</h1>
+        <p class="subtitle">มองเฉพาะลูกศร <b>ตรงกลาง</b> แล้วกดทิศนั้น อย่าให้ตัวรอบข้างหลอก</p>
+
+        <div class="stats" style="--cols: 3">
+            <div><span class="stat-label">ข้อที่</span><span id="trial-val" class="stat-value">0/30</span></div>
+            <div><span class="stat-label">แม่นยำ</span><span id="acc-val" class="stat-value">--</span></div>
+            <div><span class="stat-label">เฉลี่ย</span><span id="rt-val" class="stat-value">--</span></div>
+        </div>
+
+        <div class="stage" id="stage">
+            <div class="cluster" id="cluster">
+                <div class="noise-box" id="noise-a"></div>
+                <div class="row" id="row"><span class="fix">+</span></div>
+                <div class="pointer" id="pointer"></div>
+                <div class="noise-box" id="noise-b"></div>
+            </div>
+        </div>
+        <div class="fb" id="fb">พร้อมแล้วกดเริ่มงาน</div>
+
+        <div class="pad">
+            <button class="pad-btn" id="btn-L"><i class="fa-solid fa-arrow-left"></i>ซ้าย<span>A / ←</span></button>
+            <button class="pad-btn" id="btn-R"><i class="fa-solid fa-arrow-right"></i>ขวา<span>D / →</span></button>
+            <button class="pad-btn" id="btn-U"><i class="fa-solid fa-arrow-up"></i>ขึ้น<span>W / ↑</span></button>
+            <button class="pad-btn" id="btn-D"><i class="fa-solid fa-arrow-down"></i>ลง<span>S / ↓</span></button>
+        </div>
+
+        <div class="overlay" id="overlay">
+            <h2 id="overlay-title">Focus Filter</h2>
+            <div class="best-record" id="best-record">เฉลี่ยดีที่สุด: --</div>
+            <div class="seg" id="seg-mode">
+                <button class="seg-btn active" data-mode="STD">ปกติ<small>แถวเดียว 5 → 7 ตัว</small></button>
+                <button class="seg-btn" data-mode="BUSY">พลุกพล่าน<small>แถวรบกวนกะพริบ 4 แถว</small></button>
+            </div>
+            <div class="rules-box" id="overlay-desc">
+                ทุกข้อจะมีลูกศรหลายตัว ให้ดูเฉพาะ <b>ตัวตรงกลางของแถวกลาง</b> (ไม่มีสีหรือเครื่องหมายบอก ต้องนับเอง)<br>
+                <span class="demo">→ → ← → →</span> ← ตัวกลางชี้ซ้าย กด <b>ซ้าย</b><br>
+                บางข้อเป็น <b>แนวตั้ง</b> (ลูกศรขึ้น/ลงเรียงเป็นแถวตั้ง) ให้ดูตัวกลางแล้วกด <b>ขึ้น</b> หรือ <b>ลง</b> สลับแนวแบบสุ่มทุกข้อ<br><br>
+                30 ข้อ ตอบให้ถูกและเร็วที่สุด ตัวรอบข้างอาจชี้ทางเดียวกัน ตรงข้าม หรือเป็นจุดกลาง ๆ<br>
+                กลุ่มลูกศรจะ <b>โผล่ในตำแหน่งสุ่ม</b> (บน/ล่าง ซ้าย/ขวา) ไม่ได้อยู่กลางจอเสมอไป ต้องกวาดสายตาหาก่อนแล้วดูเฉพาะตัวตรงกลางของกลุ่ม<br>
+                โหมด <b>ปกติ</b> ช่วงท้ายลูกศรเพิ่มเป็น 7 ตัว โหมด <b>พลุกพล่าน</b> มีแถวลูกศรรบกวนกะพริบอยู่รอบแถวกลางตลอดเวลา<br>
+                ต้องตอบถูกอย่างน้อย <b>85%</b> จึงจะบันทึกสถิติ
+            </div>
+            <button class="btn" id="start-btn">เริ่มงาน</button>
+        </div>
+    </div>
+
+    <script>
+        const TOTAL = 30;
+        const MIN_ACC = 85;
+        const TIMEOUT_MS = 1800;      // a bit more time: the group can now appear anywhere
+
+        const $ = (id) => document.getElementById(id);
+        const stage = $('stage'), rowEl = $('row'), pointerEl = $('pointer'), fb = $('fb');
+        const noiseA = $('noise-a'), noiseB = $('noise-b'), clusterEl = $('cluster');
+        const trialVal = $('trial-val'), accVal = $('acc-val'), rtVal = $('rt-val');
+        const overlay = $('overlay'), overlayTitle = $('overlay-title'), overlayDesc = $('overlay-desc');
+        const bestRecord = $('best-record'), startBtn = $('start-btn');
+        const soundBtn = $('sound-btn'), soundIcon = $('sound-icon');
+
+        let state = 'idle';   // idle | fix | stim | fb
+        let trials = [], idx = 0, results = [];
+        let target = 'L', onset = 0;
+        let tFix = null, tTimeout = null, tNext = null, tFlick = null, muted = false;
+        let mode = 'STD';     // STD | BUSY (BUSY keeps its own best score)
+
+        // --- audio ---
+        let audioCtx = null;
+        function beep(freq, dur, type = 'sine', vol = 0.06) {
+            if (muted) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const t = audioCtx.currentTime;
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t); o.stop(t + dur);
+            } catch (e) {}
+        }
+        const sfx = {
+            ok: () => beep(660, 0.06),
+            bad: () => beep(150, 0.2, 'triangle', 0.12),
+            end: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.09), i * 90))
+        };
+
+        // --- storage: lowest mean RT (ms) with enough accuracy ---
+        function getUser() {
+            try { return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' }; }
+            catch (e) { return { username: 'guest' }; }
+        }
+        const storeKey = () => (mode === 'BUSY' ? 'arcade_filter_busy_scores' : 'arcade_filter_scores');
+        function readScores() {
+            try { return JSON.parse(localStorage.getItem(storeKey()) || '{}'); }
+            catch (e) { return {}; }
+        }
+        function showBest() {
+            const b = readScores()[getUser().username];
+            bestRecord.textContent = `เฉลี่ยดีที่สุด (${mode === 'BUSY' ? 'พลุกพล่าน' : 'ปกติ'}): ${b ? b + ' ms' : '--'}`;
+        }
+        function saveBest(ms) {
+            const s = readScores(), u = getUser().username;
+            if (!s[u] || ms < s[u]) {
+                s[u] = ms;
+                try { localStorage.setItem(storeKey(), JSON.stringify(s)); } catch (e) {}
+                return true;
+            }
+            return false;
+        }
+
+        // --- helpers ---
+        function shuffle(a) {
+            a = [...a];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+        function buildTrials() {
+            const types = [
+                ...Array(10).fill('cong'),
+                ...Array(14).fill('incong'),
+                ...Array(6).fill('neutral')
+            ];
+            const orients = shuffle(types.map((_, i) => i % 2 ? 'V' : 'H'));      // half horizontal, half vertical, random order
+            return shuffle(types).map((type, i) => {
+                const orient = orients[i];
+                const pair = orient === 'H' ? ['L', 'R'] : ['U', 'D'];
+                return { type, orient, dir: pair[Math.random() < 0.5 ? 0 : 1] };
+            });
+        }
+        function icon(kind, cls = '') {
+            const name = { L: 'fa-arrow-left', R: 'fa-arrow-right', U: 'fa-arrow-up', D: 'fa-arrow-down' }[kind] || 'fa-minus';
+            return `<i class="fa-solid ${name} ${cls}"></i>`;
+        }
+        function mean(arr) { return arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null; }
+
+        // how many arrows are in the main row: busy mode is always 7, normal mode grows to 7 in the last third
+        function widthFor(i) { return mode === 'BUSY' ? 7 : (i < 20 ? 5 : 7); }
+
+        // distractor rows (busy mode only): random arrows that re-shuffle every 140 ms
+        let curOrient = 'H';
+        function noiseRow(w) {
+            const pair = curOrient === 'H' ? ['L', 'R'] : ['U', 'D'];
+            let html = '';
+            for (let i = 0; i < w; i++) html += icon(pair[Math.random() < 0.5 ? 0 : 1]);
+            return `<div class="row noise">${html}</div>`;
+        }
+        function fillNoise(w) {
+            noiseA.innerHTML = noiseRow(w) + noiseRow(w);
+            noiseB.innerHTML = noiseRow(w) + noiseRow(w);
+        }
+        function startNoise(w) {
+            fillNoise(w);
+            clearInterval(tFlick);
+            tFlick = setInterval(() => fillNoise(w), 140);
+        }
+        function stopNoise() { clearInterval(tFlick); tFlick = null; }
+
+        // put the arrow group somewhere random: always clearly above or below the centre line,
+        // with a random left/right shift, so staring at the middle of the screen does not help
+        function placeCluster() {
+            clusterEl.style.transform = 'none';
+            const s = stage.getBoundingClientRect(), c = clusterEl.getBoundingClientRect();
+            const maxDx = Math.max(0, (s.width - c.width) / 2 - 8);
+            const maxDy = Math.max(0, (s.height - c.height) / 2 - 8);
+            const far = () => (Math.random() < 0.5 ? -1 : 1) * (0.55 + Math.random() * 0.45);
+            const free = () => Math.random() * 2 - 1;
+            // horizontal group: far above/below the centre line; vertical group: far left/right of it
+            const dx = (curOrient === 'H' ? free() : far()) * maxDx;
+            const dy = (curOrient === 'H' ? far() : free()) * maxDy;
+            clusterEl.style.transform = `translate(${Math.round(dx)}px, ${Math.round(dy)}px)`;
+        }
+        function clearNoise() { stopNoise(); noiseA.innerHTML = ''; noiseB.innerHTML = ''; }
+
+        function updateStats() {
+            trialVal.textContent = `${Math.min(idx, TOTAL)}/${TOTAL}`;
+            if (results.length) {
+                const ok = results.filter(r => r.ok);
+                accVal.textContent = Math.round(ok.length / results.length * 100) + '%';
+                const m = mean(ok.map(r => r.rt));
+                rtVal.textContent = m === null ? '--' : m + 'ms';
+            } else {
+                accVal.textContent = '--';
+                rtVal.textContent = '--';
+            }
+        }
+
+        function setFb(text, cls = '') { fb.className = 'fb ' + cls; fb.textContent = text; }
+        function setStage(cls) { stage.className = 'stage ' + (mode === 'BUSY' ? 'busy ' : '') + cls; }
+        function clearTimers() { clearTimeout(tFix); clearTimeout(tTimeout); clearTimeout(tNext); stopNoise(); }
+
+        // --- flow ---
+        function startGame() {
+            clearTimers();
+            trials = buildTrials();
+            idx = 0; results = [];
+            overlay.style.display = 'none';
+            updateStats();
+            nextTrial();
+        }
+
+        function nextTrial() {
+            if (idx >= TOTAL) return endGame();
+            state = 'fix';
+            setStage('');
+            rowEl.innerHTML = '<span class="fix">+</span>';
+            pointerEl.innerHTML = '';
+            clearNoise();
+            clusterEl.style.transform = 'none';      // fixation cross is always in the centre
+            clusterEl.classList.remove('v');
+            setFb('จ้องตรงกลาง...');
+            tFix = setTimeout(showStim, 500 + Math.random() * 400);
+        }
+
+        function showStim() {
+            const t = trials[idx];
+            target = t.dir;
+            const opp = { L: 'R', R: 'L', U: 'D', D: 'U' }[t.dir];
+            curOrient = t.orient;
+            clusterEl.classList.toggle('v', curOrient === 'V');
+            const flank = t.type === 'cong' ? t.dir : t.type === 'incong' ? opp : 'N';
+            const w = widthFor(idx), mid = (w - 1) / 2;
+            let html = '';
+            for (let i = 0; i < w; i++) html += icon(i === mid ? t.dir : flank, '');
+            rowEl.innerHTML = html;
+            pointerEl.innerHTML = '';
+            pointerEl.style.marginLeft = '0';
+            if (mode === 'BUSY') startNoise(w);
+            placeCluster();
+            setFb('ตัวกลางชี้ไปทางไหน?');
+            state = 'stim';
+            onset = performance.now();
+            tTimeout = setTimeout(() => respond(null), TIMEOUT_MS);
+        }
+
+        function respond(dir) {
+            if (state === 'fix') { setFb('รอให้ลูกศรขึ้นก่อน'); return; }      // too early: ignored, no penalty
+            if (state !== 'stim') return;
+            clearTimeout(tTimeout);
+            stopNoise();
+            const rt = Math.round(performance.now() - onset);
+            const ok = dir === target;
+            results.push({ type: trials[idx].type, rt: dir ? rt : null, ok });
+            idx++;
+            state = 'fb';
+            if (ok) {
+                sfx.ok(); setStage('ok'); setFb(rt + ' ms', 'ok');
+            } else {
+                sfx.bad(); setStage('bad'); setFb(dir ? 'ผิดทิศ' : 'ไม่ได้ตอบ', 'bad');
+            }
+            updateStats();
+            tNext = setTimeout(nextTrial, 450);
+        }
+
+        function rating(ms) {
+            const k = mode === 'BUSY' ? 1.25 : 1.12;     // searching for a random position (and the busy screen) is slower
+            if (ms < 420 * k) return 'ไวมาก';
+            if (ms < 520 * k) return 'ไวกว่าค่าเฉลี่ย';
+            if (ms < 650 * k) return 'ปกติ';
+            return 'ลองฝึกอีกนิด';
+        }
+
+        function endGame() {
+            state = 'idle';
+            clearTimers();
+            sfx.end();
+
+            const ok = results.filter(r => r.ok);
+            const acc = Math.round(ok.length / results.length * 100);
+            const m = mean(ok.map(r => r.rt));
+            const mc = mean(ok.filter(r => r.type === 'cong').map(r => r.rt));
+            const mi = mean(ok.filter(r => r.type === 'incong').map(r => r.rt));
+
+            let html, title = 'เสร็จสิ้น';
+            if (m === null) {
+                html = 'ไม่มีข้อที่ตอบถูก<br><span style="color:var(--muted);">ลองอีกครั้ง โฟกัสเฉพาะตัวกลาง</span>';
+            } else {
+                const qualifies = acc >= MIN_ACC;
+                const isNew = qualifies && saveBest(m);
+                if (isNew) title = 'ผลดีที่สุดใหม่';
+                let note = '';
+                if (isNew) note = '<br>บันทึกผลดีที่สุดใหม่แล้ว';
+                else if (!qualifies) note = `<br>แม่นยำไม่ถึง ${MIN_ACC}% จึงไม่บันทึกสถิติ`;
+                const interference = (mc !== null && mi !== null) ? `<br>ผลหลอกของตัวรอบข้าง: +${Math.max(0, mi - mc)} ms (ตรงข้าม ${mi} ms เทียบกับชี้ทางเดียวกัน ${mc} ms)` : '';
+                html = `
+                    เวลาตอบเฉลี่ย<br>
+                    <span class="big-num">${m} ms</span><br>
+                    <span style="color:var(--muted);">${rating(m)} · แม่นยำ ${acc}%${interference}${note}</span>`;
+            }
+            overlayTitle.textContent = title;
+            overlayDesc.innerHTML = html;
+            startBtn.textContent = 'ทำอีกรอบ';
+            showBest();
+            overlay.style.display = 'flex';
+        }
+
+        // --- events ---
+        function press(dir) {
+            const b = $('btn-' + dir);
+            b.classList.add('press');
+            setTimeout(() => b.classList.remove('press'), 100);
+            respond(dir);
+        }
+        ['L', 'R', 'U', 'D'].forEach(d => {
+            $('btn-' + d).addEventListener('pointerdown', (e) => { e.preventDefault(); press(d); });
+        });
+
+        // e.code is layout-independent, so A/D works with a Thai keyboard too
+        document.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+            if (state === 'idle') {
+                if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); startGame(); }
+                return;
+            }
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') { e.preventDefault(); press('L'); }
+            else if (e.code === 'ArrowRight' || e.code === 'KeyD') { e.preventDefault(); press('R'); }
+            else if (e.code === 'ArrowUp' || e.code === 'KeyW') { e.preventDefault(); press('U'); }
+            else if (e.code === 'ArrowDown' || e.code === 'KeyS') { e.preventDefault(); press('D'); }
+        });
+
+        $('seg-mode').addEventListener('click', (e) => {
+            const b = e.target.closest('[data-mode]');
+            if (!b) return;
+            mode = b.dataset.mode;
+            [...$('seg-mode').children].forEach(x => x.classList.toggle('active', x === b));
+            showBest();
+        });
+        startBtn.addEventListener('click', () => { startBtn.blur(); startGame(); });
+        soundBtn.addEventListener('click', () => {
+            muted = !muted;
+            soundIcon.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('muted', muted);
+        });
+
+        showBest();
+    </script>
+</body>
+</html>

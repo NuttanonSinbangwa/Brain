@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Packet Catch - ดักแพ็กเก็ต</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="nav.css">
+    <script src="theme.js"></script>
+    <style>
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: var(--bg-soft);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            margin-bottom: 10px;
+            touch-action: manipulation;
+            cursor: pointer;
+        }
+        :root[data-theme="office"] canvas { border-radius: 6px; }
+
+        .msg {
+            min-height: 26px;
+            margin-bottom: 12px;
+            font-size: 0.92rem;
+            color: var(--muted);
+        }
+        .msg.ok { color: var(--good); font-weight: 500; }
+        .msg.bad { color: var(--bad); font-weight: 500; }
+
+        .catch-btn {
+            width: 100%;
+            max-width: 360px;
+            height: 68px;
+            font-size: 1.1rem;
+            letter-spacing: 0.04em;
+        }
+
+        .seg {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 5px;
+        }
+        .seg-btn {
+            padding: 9px 8px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .seg-btn small { display: block; font-size: 0.68rem; font-weight: 300; opacity: 0.85; }
+        .seg-btn:hover { color: var(--ink); }
+        .seg-btn.active { background: var(--surface); border-color: var(--accent); color: var(--accent); }
+        :root[data-theme="office"] .seg { border-radius: 6px; }
+        :root[data-theme="office"] .seg-btn { border-radius: 4px; }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--surface);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 24px;
+            gap: 14px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+        .overlay h2 { font-size: 1.5rem; font-weight: 600; }
+        .best-record { font-size: 0.85rem; color: var(--muted); }
+        .rules-box {
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            font-weight: 300;
+            text-align: left;
+            width: 100%;
+        }
+        .rules-box b { font-weight: 600; }
+        .big-num { font-size: 2.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body>
+    <nav class="game-nav" style="--nav-max: 600px">
+        <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
+        <div class="nav-brand">WORKDESK</div>
+        <div class="nav-actions">
+            <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
+        </div>
+    </nav>
+
+    <div class="panel" style="--w: 600px; min-height: 520px;">
+        <h1 class="title">Packet Catch</h1>
+        <p class="subtitle">แพ็กเก็ตวิ่งเข้าโซนรบกวน กดดักให้ตรงจังหวะที่ถึงเส้นเป้าหมาย</p>
+
+        <div class="stats" style="--cols: 3">
+            <div><span class="stat-label">รอบที่</span><span id="round-val" class="stat-value">0/8</span></div>
+            <div><span class="stat-label">คลาดเคลื่อนล่าสุด</span><span id="last-val" class="stat-value">--</span></div>
+            <div><span class="stat-label">คลาดเฉลี่ย</span><span id="avg-val" class="stat-value">--</span></div>
+        </div>
+
+        <canvas id="cv" width="520" height="300"></canvas>
+        <div class="msg" id="msg">กดเริ่มงานเพื่อเริ่มรับสัญญาณ</div>
+
+        <button id="catch-btn" class="btn catch-btn disabled"><i class="fa-solid fa-bullseye"></i> ดัก! (Space)</button>
+
+        <div class="overlay" id="overlay">
+            <h2 id="overlay-title">Packet Catch</h2>
+            <div class="best-record" id="best-record">ผลดีที่สุด: --</div>
+            <div class="seg" id="seg-mode">
+                <button class="seg-btn active" data-mode="STD">ตรงเส้น<small>เป้าอยู่ปลายทาง</small></button>
+                <button class="seg-btn" data-mode="BOUNCE">ชิ่งกำแพง<small>เป้าอยู่ขาสะท้อนกลับ</small></button>
+            </div>
+            <div class="rules-box" id="overlay-desc">
+                แพ็กเก็ตวิ่งจากซ้ายไปขวา ชิ่งขอบบน-ล่าง ด้วยความเร็วคงที่ที่ <b>ไม่เท่ากันทุกรอบ</b><br>
+                เห็นเส้นทางแค่ช่วงแรก ก่อนจะเข้า <b>โซนสัญญาณรบกวน</b> ที่บังไว้ และโซนจะกว้างขึ้นทุกรอบ<br>
+                คำนวณความเร็วในใจ แล้วกด <b>ดัก</b> ในจังหวะที่มันถึงเส้นเป้าหมายพอดี<br>
+                โหมด <b>ชิ่งกำแพง</b> แพ็กเก็ตจะชนกำแพงขวาแล้วสะท้อนกลับ เป้าหมายอยู่ที่ขากลับ<br><br>
+                8 รอบ คะแนนคือค่าคลาดเคลื่อนเฉลี่ย (มิลลิวินาที) ยิ่งน้อยยิ่งดี กดไม่ทันนับเป็น 900 ms
+            </div>
+            <button class="btn" id="start-btn">เริ่มงาน</button>
+        </div>
+    </div>
+
+    <script>
+        const W = 520, H = 300;
+        const X0 = 28, XL = 14, XR = W - 14;
+        const GATE_STD = 470, GATE_BOUNCE = 330;
+        const YMIN = 16, YMAX = H - 16;
+        const ROUNDS = 8, MISS_CAP = 900;
+
+        const $ = (id) => document.getElementById(id);
+        const cv = $('cv'), ctx = cv.getContext('2d');
+        const roundVal = $('round-val'), lastVal = $('last-val'), avgVal = $('avg-val'), msgEl = $('msg');
+        const catchBtn = $('catch-btn'), overlay = $('overlay'), overlayTitle = $('overlay-title');
+        const overlayDesc = $('overlay-desc'), bestRecord = $('best-record'), startBtn = $('start-btn');
+        const soundBtn = $('sound-btn'), soundIcon = $('sound-icon');
+
+        let mode = 'STD';
+        let state = 'idle';      // idle | ready | flying | result
+        let round = 0, errs = [];
+        let vx = 0, vy = 0, y0 = 0, T = 0, gate = GATE_STD, blind = 250, launchT = 0, tPress = null;
+        let nextTimer = null, launchTimer = null, muted = false;
+
+        // --- audio ---
+        let audioCtx = null;
+        function beep(freq, dur, type = 'sine', vol = 0.07) {
+            if (muted) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const t = audioCtx.currentTime;
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t); o.stop(t + dur);
+            } catch (e) {}
+        }
+        const sfx = {
+            launch: () => beep(520, 0.06),
+            good: () => { beep(660, 0.08); setTimeout(() => beep(880, 0.1), 70); },
+            bad: () => beep(170, 0.2, 'triangle', 0.1),
+            end: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.09), i * 90))
+        };
+
+        // --- storage: lowest average error (ms) per user ---
+        // standard mode keeps the original key, bounce mode has its own so the two never mix
+        function getUser() {
+            try { return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' }; }
+            catch (e) { return { username: 'guest' }; }
+        }
+        const storeKey = () => (mode === 'BOUNCE' ? 'arcade_intercept_bounce_scores' : 'arcade_intercept_scores');
+        function readScores() {
+            try { return JSON.parse(localStorage.getItem(storeKey()) || '{}'); }
+            catch (e) { return {}; }
+        }
+        function showBest() {
+            const b = readScores()[getUser().username];
+            const label = mode === 'BOUNCE' ? 'ชิ่งกำแพง' : 'ตรงเส้น';
+            bestRecord.textContent = `ผลดีที่สุด (${label}): ${b !== undefined ? '±' + b + ' ms' : '--'}`;
+        }
+        function saveBest(ms) {
+            const s = readScores(), u = getUser().username;
+            if (s[u] === undefined || ms < s[u]) {
+                s[u] = ms;
+                try { localStorage.setItem(storeKey(), JSON.stringify(s)); } catch (e) {}
+                return true;
+            }
+            return false;
+        }
+
+        // --- physics: constant speed, reflecting off the walls (triangle-wave unfolding) ---
+        function tri(u, L) {
+            const m = ((u % (2 * L)) + 2 * L) % (2 * L);
+            return m <= L ? m : 2 * L - m;
+        }
+        function posAt(t) {
+            return {
+                x: XL + tri(X0 - XL + vx * t, XR - XL),
+                y: YMIN + tri(y0 - YMIN + vy * t, YMAX - YMIN)
+            };
+        }
+
+        function setMsg(text, cls = '') { msgEl.className = 'msg ' + cls; msgEl.textContent = text; }
+        function avgErr() {
+            return errs.length ? Math.round(errs.reduce((a, b) => a + b, 0) / errs.length) : null;
+        }
+        function updateStats() {
+            roundVal.textContent = `${Math.min(round, ROUNDS)}/${ROUNDS}`;
+            const a = avgErr();
+            avgVal.textContent = a === null ? '--' : '±' + a + 'ms';
+        }
+
+        // --- flow ---
+        function startGame() {
+            clearTimeout(nextTimer); clearTimeout(launchTimer);
+            round = 0; errs = [];
+            lastVal.textContent = '--';
+            overlay.style.display = 'none';
+            nextRound();
+        }
+
+        function nextRound() {
+            if (round >= ROUNDS) return endGame();
+            round++;
+            const bounce = mode === 'BOUNCE';
+            const ang = (12 + Math.random() * 30) * (Math.random() < 0.5 ? -1 : 1) * Math.PI / 180;
+            const speed = (bounce ? 200 : 170) + Math.random() * 130;
+            vx = speed * Math.cos(ang);
+            vy = speed * Math.sin(ang);
+            y0 = YMIN + 30 + Math.random() * (YMAX - YMIN - 60);
+            gate = bounce ? GATE_BOUNCE : GATE_STD;
+            blind = 260 - (round - 1) * 12;                 // the noise wall creeps left every round
+            T = bounce ? ((XR - X0) + (XR - gate)) / vx : (gate - X0) / vx;
+            tPress = null;
+            state = 'ready';
+            catchBtn.classList.add('disabled');
+            setMsg(`รอบ ${round} เตรียมรับสัญญาณ...`);
+            updateStats();
+            launchTimer = setTimeout(launch, 900);
+        }
+
+        function launch() {
+            state = 'flying';
+            launchT = performance.now();
+            catchBtn.classList.remove('disabled');
+            setMsg('ดูความเร็วให้ดี แล้วกดดักเมื่อมันถึงเส้นเป้าหมาย');
+            sfx.launch();
+        }
+
+        function finishRound(errMs, text, good) {
+            state = 'result';
+            catchBtn.classList.add('disabled');
+            const mag = Math.min(MISS_CAP, Math.round(Math.abs(errMs)));
+            errs.push(mag);
+            lastVal.textContent = '±' + mag + 'ms';
+            updateStats();
+            (good ? sfx.good : sfx.bad)();
+            setMsg(text, good ? 'ok' : 'bad');
+            nextTimer = setTimeout(nextRound, 1900);
+        }
+
+        function press() {
+            if (state !== 'flying') return;
+            tPress = (performance.now() - launchT) / 1000;
+            const err = (tPress - T) * 1000;
+            const mag = Math.round(Math.abs(err));
+            const dir = err < 0 ? 'เร็วไป' : 'ช้าไป';
+            finishRound(err, mag <= 60 ? `เยี่ยม! ${dir} ${mag} ms` : `${dir} ${mag} ms`, mag <= 120);
+        }
+
+        function rating(avg) {
+            const k = mode === 'BOUNCE' ? 1.3 : 1;       // the longer bounce path is harder to judge
+            if (avg < 70 * k) return 'แม่นมาก';
+            if (avg < 140 * k) return 'แม่นกว่าค่าเฉลี่ย';
+            if (avg < 260 * k) return 'ปกติ';
+            return 'ลองฝึกประเมินความเร็วอีกนิด';
+        }
+
+        function endGame() {
+            state = 'idle';
+            clearTimeout(nextTimer); clearTimeout(launchTimer);
+            sfx.end();
+            const avg = avgErr();
+            const isNew = saveBest(avg);
+            overlayTitle.textContent = isNew ? 'ผลดีที่สุดใหม่' : 'เสร็จสิ้น';
+            overlayDesc.innerHTML = `
+                คลาดเคลื่อนเฉลี่ย<br>
+                <span class="big-num">±${avg} ms</span><br>
+                <span style="color:var(--muted);">${rating(avg)} · แม่นสุด ±${Math.min(...errs)} ms${isNew ? '<br>บันทึกผลดีที่สุดใหม่แล้ว' : ''}</span>`;
+            startBtn.textContent = 'ทำอีกรอบ';
+            showBest();
+            overlay.style.display = 'flex';
+        }
+
+        // --- drawing ---
+        function colors() {
+            const cs = getComputedStyle(document.documentElement);
+            const v = (n) => cs.getPropertyValue(n).trim();
+            return { accent: v('--accent'), good: v('--good'), bad: v('--bad'), ink: v('--ink'), line: v('--line'), muted: v('--muted') };
+        }
+
+        function trajectory(c, tEnd, dashed) {
+            ctx.beginPath();
+            const steps = 120;
+            for (let i = 0; i <= steps; i++) {
+                const p = posAt(tEnd * i / steps);
+                if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+            }
+            ctx.strokeStyle = c.accent;
+            ctx.lineWidth = 2;
+            ctx.setLineDash(dashed ? [6, 5] : []);
+            ctx.globalAlpha = dashed ? 0.55 : 0.4;
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+            ctx.setLineDash([]);
+        }
+
+        // first moment the packet is hidden by the noise wall (it is still left of the wall before this)
+        function tVisibleEnd() { return (blind - X0) / vx; }
+
+        function draw(now) {
+            const c = colors();
+            ctx.clearRect(0, 0, W, H);
+            const bounce = mode === 'BOUNCE';
+            const wallRight = bounce ? W : gate - 4;
+
+            // blind zone (noise wall)
+            ctx.save();
+            ctx.globalAlpha = 0.1;
+            ctx.fillStyle = c.ink;
+            ctx.fillRect(blind, 0, wallRight - blind, H);
+            ctx.globalAlpha = 0.22;
+            ctx.strokeStyle = c.ink;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.rect(blind, 0, wallRight - blind, H);
+            ctx.clip();
+            const drift = (now / 60) % 14;
+            for (let x = blind - H - 14 + drift; x < wallRight; x += 14) {
+                ctx.beginPath();
+                ctx.moveTo(x, H);
+                ctx.lineTo(x + H, 0);
+                ctx.stroke();
+            }
+            ctx.restore();
+            ctx.fillStyle = c.bad;
+            ctx.fillRect(blind - 1, 0, 2, H);
+            ctx.fillStyle = c.muted;
+            ctx.font = '500 12px Prompt, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('สัญญาณรบกวน', (blind + wallRight) / 2, 18);
+
+            // right wall marker in bounce mode
+            if (bounce) {
+                ctx.fillStyle = c.muted;
+                ctx.fillRect(XR + 6, 0, 3, H);
+            }
+
+            // target line
+            ctx.strokeStyle = c.good;
+            ctx.lineWidth = 3;
+            ctx.setLineDash(bounce ? [8, 6] : []);
+            ctx.beginPath();
+            ctx.moveTo(gate, 0);
+            ctx.lineTo(gate, H);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = c.good;
+            ctx.textAlign = 'center';
+            ctx.fillText('เป้าหมาย', bounce ? gate : gate + 24, H - 8);
+
+            // launch point
+            ctx.fillStyle = c.line;
+            ctx.beginPath();
+            ctx.arc(X0, y0 || H / 2, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (state === 'ready') {
+                ctx.fillStyle = c.accent;
+                ctx.beginPath();
+                ctx.arc(X0, y0, 7, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (state === 'flying') {
+                const t = (now - launchT) / 1000;
+                const p = posAt(t);
+                trajectory(c, Math.min(t, tVisibleEnd()), false);   // only the part before the wall
+                if (p.x < blind) {
+                    ctx.fillStyle = c.accent;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else if (state === 'result') {
+                trajectory(c, Math.max(T, tPress || 0) + 0.25, true);
+                const arrive = posAt(T);
+                ctx.fillStyle = c.good;
+                ctx.beginPath();
+                ctx.arc(arrive.x, arrive.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                if (tPress !== null) {
+                    const pp = posAt(tPress);
+                    ctx.strokeStyle = c.bad;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(pp.x, pp.y, 9, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function loop(now) {
+            if (state === 'flying' && (now - launchT) / 1000 > T + 0.9) finishRound(MISS_CAP, 'ไม่ได้กดทัน', false);
+            draw(now);
+            requestAnimationFrame(loop);
+        }
+
+        // --- events ---
+        $('seg-mode').addEventListener('click', (e) => {
+            const b = e.target.closest('[data-mode]');
+            if (!b) return;
+            mode = b.dataset.mode;
+            [...$('seg-mode').children].forEach(x => x.classList.toggle('active', x === b));
+            gate = mode === 'BOUNCE' ? GATE_BOUNCE : GATE_STD;
+            showBest();
+        });
+        startBtn.addEventListener('click', () => { startBtn.blur(); startGame(); });
+        catchBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); press(); });
+        cv.addEventListener('pointerdown', (e) => { e.preventDefault(); press(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+            if (e.code === 'Space' || e.code === 'Enter') {
+                e.preventDefault();
+                if (state === 'idle') startGame();
+                else if (state === 'flying') press();
+            }
+        });
+        soundBtn.addEventListener('click', () => {
+            muted = !muted;
+            soundIcon.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('muted', muted);
+        });
+
+        y0 = H / 2; vx = 220; vy = 60; T = 2;
+        showBest();
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>

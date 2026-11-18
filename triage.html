@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alert Triage - จัดลำดับแจ้งเตือน</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="nav.css">
+    <script src="theme.js"></script>
+    <style>
+        .worker {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-soft);
+            border-radius: 12px;
+            padding: 8px 14px;
+            margin-bottom: 14px;
+            font-size: 0.82rem;
+            color: var(--muted);
+            text-align: left;
+        }
+        .worker .wl { flex-shrink: 0; min-width: 120px; }
+        .worker .wbar { flex: 1; height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; }
+        .worker .wbar i { display: block; height: 100%; width: 0; background: var(--accent); }
+        .worker.busy .wl { color: var(--accent); font-weight: 500; }
+        .worker.denied { animation: shake 0.25s ease-in-out; }
+        :root[data-theme="office"] .worker { border-radius: 6px; }
+
+        .alerts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+
+        .slot {
+            position: relative;
+            min-height: 62px;
+            border: 1px dashed var(--line);
+            border-radius: 12px;
+            padding: 0;
+            overflow: hidden;
+        }
+        .acard {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 10px 14px 14px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-left-width: 5px;
+            border-radius: 12px;
+            color: var(--ink);
+            text-align: left;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        .slot:has(.acard) { border: 0; }
+        .acard:hover { transform: translateX(2px); }
+        .acard:active { transform: scale(0.99); }
+        .acard.crit { border-left-color: var(--bad); }
+        .acard.warn { border-left-color: var(--warn, #d9a400); }
+        .acard.info { border-left-color: var(--accent); }
+        .acard .key {
+            flex-shrink: 0;
+            width: 24px; height: 24px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 6px;
+            background: var(--bg-soft);
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .acard .body { flex: 1; min-width: 0; }
+        .acard .sev { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+        .acard.crit .sev { color: var(--bad); }
+        .acard.warn .sev { color: var(--warn, #d9a400); }
+        .acard.info .sev { color: var(--accent); }
+        .acard .txt { font-size: 0.92rem; font-weight: 500; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .acard .sec { flex-shrink: 0; font-size: 0.8rem; font-weight: 500; font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }
+        .acard.urgent .sec { color: var(--bad); }
+        .acard .pts { flex-shrink: 0; font-size: 0.78rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+        .acard .tbar { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--bg-soft); }
+        .acard .tbar i { display: block; height: 100%; width: 100%; }
+        .acard.crit .tbar i { background: var(--bad); }
+        .acard.warn .tbar i { background: var(--warn, #d9a400); }
+        .acard.info .tbar i { background: var(--accent); }
+        .acard.urgent { animation: pulse 0.6s ease-in-out infinite; }
+        .acard.working { opacity: 0.75; border-color: var(--accent); }
+        .acard.working .tbar i { background: var(--good); }
+        @keyframes pulse { 50% { background: var(--bad-soft); } }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+        .hit-flash { animation: shake 0.3s ease-in-out; }
+
+        .tip { color: var(--muted); font-size: 0.8rem; font-weight: 300; }
+        .tip i { margin-right: 6px; color: var(--accent); }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--surface);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 24px;
+            gap: 14px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+        .overlay h2 { font-size: 1.5rem; font-weight: 600; }
+        .best-record { font-size: 0.85rem; color: var(--muted); }
+        .rules-box {
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            font-weight: 300;
+            text-align: left;
+            width: 100%;
+        }
+        .rules-box b { font-weight: 600; }
+        .c-crit { color: var(--bad); font-weight: 600; }
+        .c-warn { color: var(--warn, #d9a400); font-weight: 600; }
+        .c-info { color: var(--accent); font-weight: 600; }
+        .big-num { font-size: 2.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body>
+    <nav class="game-nav" style="--nav-max: 560px">
+        <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
+        <div class="nav-brand">WORKDESK</div>
+        <div class="nav-actions">
+            <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
+        </div>
+    </nav>
+
+    <div class="panel" style="--w: 560px; min-height: 600px;">
+        <h1 class="title">Alert Triage</h1>
+        <p class="subtitle">แจ้งเตือนเด้งพร้อมกัน เลือกจัดการตัวที่เร่งด่วนก่อนระบบล่ม</p>
+
+        <div class="stats" style="--cols: 3">
+            <div><span class="stat-label">เวลากะ</span><span id="time-val" class="stat-value">90s</span></div>
+            <div><span class="stat-label">สถานะระบบ</span><span id="health-val" class="stat-value">100%</span></div>
+            <div><span class="stat-label">คะแนน</span><span id="score-val" class="stat-value">0</span></div>
+        </div>
+
+        <div class="worker" id="worker">
+            <span class="wl" id="worker-label">ผู้ดูแล: ว่าง</span>
+            <div class="wbar"><i id="worker-bar"></i></div>
+        </div>
+
+        <div class="alerts" id="alerts"></div>
+
+        <p class="tip"><i class="fa-solid fa-keyboard"></i>คลิกการ์ด หรือกดเลข 1–5 ผู้ดูแลทำได้ทีละงาน ระหว่างแก้ไขตัวอื่นยังนับถอยหลังอยู่</p>
+
+        <div class="overlay" id="overlay">
+            <h2 id="overlay-title">Alert Triage</h2>
+            <div class="best-record" id="best-record">ผลดีที่สุด: 0</div>
+            <div class="rules-box" id="overlay-desc">
+                คุณมีเวลา <b>90 วินาที</b> ดูแลระบบ แจ้งเตือนจะเด้งเข้ามาไม่หยุด<br>
+                <span class="c-crit">Critical</span> หมดเวลาเร็ว ระบบเสียหายหนัก แต่ใช้เวลาแก้นานกว่า<br>
+                <span class="c-warn">Warning</span> ปานกลาง · <span class="c-info">Info</span> ช้า เสียหายน้อย<br>
+                เวลาของแต่ละใบไม่เท่ากันแม้ระดับเดียวกัน ดู <b>เวลาที่เหลือ (วินาที)</b> ไม่ใช่แค่สีหรือระดับ<br><br>
+                ผู้ดูแลแก้ได้ <b>ทีละงาน</b> (ใช้เวลาตามความรุนแรง) ต้องตัดสินใจว่าจะรับงานไหนก่อน<br>
+                เริ่มมา <b>4 แจ้งเตือนพร้อมกัน</b> ยิ่งช่วงท้ายเวลายิ่งสั้นและเด้งถี่ขึ้น<br>
+                ถ้าสถานะระบบเหลือ 0% ระบบล่ม ถ้าอยู่ครบกะจะได้โบนัสตามสถานะที่เหลือ
+            </div>
+            <button class="btn" id="start-btn">เริ่มงาน</button>
+        </div>
+    </div>
+
+    <script>
+        const SLOTS = 5;
+        const SHIFT_MS = 90000;
+        const SEV = {
+            crit: { label: 'CRITICAL', life: 7000, pts: 300, dmg: 30, work: 1800 },
+            warn: { label: 'WARNING', life: 11000, pts: 200, dmg: 18, work: 1300 },
+            info: { label: 'INFO', life: 17000, pts: 100, dmg: 8, work: 800 }
+        };
+        const MSGS = {
+            crit: ['ฐานข้อมูลหลักไม่ตอบสนอง', 'ระบบชำระเงินล่ม', 'ตรวจพบการเข้าถึงโดยไม่ได้รับอนุญาต', 'เซิร์ฟเวอร์อีเมลหยุดทำงาน'],
+            warn: ['พื้นที่ดิสก์เหลือน้อย', 'CPU สูงกว่า 90%', 'ใบรับรอง SSL ใกล้หมดอายุ', 'การสำรองข้อมูลล้มเหลว'],
+            info: ['มีอัปเดตระบบรอติดตั้ง', 'รายงานประจำวันพร้อมตรวจ', 'ผู้ใช้ใหม่รออนุมัติ', 'ล้างแคชเสร็จสิ้น']
+        };
+
+        const $ = (id) => document.getElementById(id);
+        const alertsEl = $('alerts'), workerEl = $('worker'), workerLabel = $('worker-label'), workerBar = $('worker-bar');
+        const timeVal = $('time-val'), healthVal = $('health-val'), scoreVal = $('score-val');
+        const overlay = $('overlay'), overlayTitle = $('overlay-title'), overlayDesc = $('overlay-desc');
+        const bestRecord = $('best-record'), startBtn = $('start-btn');
+        const soundBtn = $('sound-btn'), soundIcon = $('sound-icon');
+
+        let playing = false, raf = null, muted = false;
+        let slots = [], health = 100, score = 0, resolved = 0, decisions = 0, good = 0;
+        let startMs = 0, lastMs = 0, spawnIn = 0, work = null;   // work = { slot, until, total }
+        let slotEls = [];
+
+        // --- audio ---
+        let audioCtx = null;
+        function beep(freq, dur, type = 'sine', vol = 0.06) {
+            if (muted) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const t = audioCtx.currentTime;
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t); o.stop(t + dur);
+            } catch (e) {}
+        }
+        const sfx = {
+            spawn: (sev) => beep(sev === 'crit' ? 880 : sev === 'warn' ? 620 : 440, 0.05, 'sine', 0.035),
+            take: () => beep(520, 0.05),
+            done: () => { beep(660, 0.07); setTimeout(() => beep(880, 0.09), 60); },
+            deny: () => beep(200, 0.08, 'triangle', 0.07),
+            dmg: () => beep(120, 0.3, 'triangle', 0.15),
+            end: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.09), i * 90))
+        };
+
+        // --- storage ---
+        function getUser() {
+            try { return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' }; }
+            catch (e) { return { username: 'guest' }; }
+        }
+        function readScores() {
+            try { return JSON.parse(localStorage.getItem('arcade_triage_scores') || '{}'); }
+            catch (e) { return {}; }
+        }
+        function showBest() { bestRecord.textContent = `ผลดีที่สุด: ${readScores()[getUser().username] || 0}`; }
+        function saveBest(v) {
+            const s = readScores(), u = getUser().username;
+            if (v > (s[u] || 0)) {
+                s[u] = v;
+                try { localStorage.setItem('arcade_triage_scores', JSON.stringify(s)); } catch (e) {}
+                return true;
+            }
+            return false;
+        }
+
+        // --- build slots ---
+        function buildSlots() {
+            alertsEl.innerHTML = '';
+            slotEls = [];
+            for (let i = 0; i < SLOTS; i++) {
+                const s = document.createElement('div');
+                s.className = 'slot';
+                alertsEl.appendChild(s);
+                slotEls.push(s);
+            }
+        }
+
+        function pickSeverity(progress) {
+            const r = Math.random();
+            const critP = 0.2 + progress * 0.15, warnP = 0.35;
+            if (r < critP) return 'crit';
+            if (r < critP + warnP) return 'warn';
+            return 'info';
+        }
+
+        function spawn(progress) {
+            const free = slots.map((a, i) => a ? -1 : i).filter(i => i >= 0);
+            if (!free.length) return false;
+            const i = free[Math.floor(Math.random() * free.length)];
+            const sev = pickSeverity(progress);
+            const list = MSGS[sev];
+            // lifetime varies per alert and shrinks as the shift goes on, so severity alone does not
+            // tell you what is most urgent: an old Info can be closer to blowing up than a fresh Warning
+            const life = SEV[sev].life * (0.65 + Math.random() * 0.45) * (1 - 0.3 * progress);
+            const a = { sev, text: list[Math.floor(Math.random() * list.length)], left: life, max: life, working: false };
+
+            const card = document.createElement('div');
+            card.className = `acard ${sev}`;
+            card.innerHTML = `
+                <span class="key">${i + 1}</span>
+                <div class="body"><div class="sev">${SEV[sev].label}</div><div class="txt"></div></div>
+                <span class="sec"></span>
+                <span class="pts">+${SEV[sev].pts}</span>
+                <div class="tbar"><i></i></div>`;
+            card.querySelector('.txt').textContent = a.text;
+            card.addEventListener('pointerdown', (e) => { e.preventDefault(); take(i); });
+            slotEls[i].appendChild(card);
+            a.el = card;
+            a.bar = card.querySelector('.tbar i');
+            a.sec = card.querySelector('.sec');
+            a.sec.textContent = (life / 1000).toFixed(1) + 's';
+            slots[i] = a;
+            sfx.spawn(sev);
+            return true;
+        }
+
+        function removeAlert(i) {
+            const a = slots[i];
+            if (!a) return;
+            a.el.remove();
+            slots[i] = null;
+        }
+
+        // --- actions ---
+        function take(i) {
+            if (!playing) return;
+            const a = slots[i];
+            if (!a || a.working) return;
+            if (work) {
+                sfx.deny();
+                workerEl.classList.remove('denied');
+                void workerEl.offsetWidth;
+                workerEl.classList.add('denied');
+                return;
+            }
+            // was this the alert that would blow up first? (earliest-deadline-first is the best strategy)
+            const waiting = slots.filter(x => x && !x.working);
+            decisions++;
+            if (waiting.every(x => x.left >= a.left)) good++;
+            a.working = true;
+            a.el.classList.add('working');
+            a.el.classList.remove('urgent');
+            const total = SEV[a.sev].work;
+            work = { slot: i, until: performance.now() + total, total };
+            sfx.take();
+        }
+
+        function hud() {
+            const left = Math.max(0, SHIFT_MS - (performance.now() - startMs));
+            timeVal.textContent = Math.ceil(left / 1000) + 's';
+            healthVal.textContent = Math.max(0, Math.round(health)) + '%';
+            healthVal.style.color = health <= 30 ? 'var(--bad)' : '';
+            scoreVal.textContent = score;
+        }
+
+        function frame(now) {
+            if (!playing) return;
+            const dt = Math.min(100, now - lastMs);
+            lastMs = now;
+            const elapsed = now - startMs;
+            if (elapsed >= SHIFT_MS) return endGame(true);
+            const progress = elapsed / SHIFT_MS;
+
+            // spawn
+            spawnIn -= dt;
+            if (spawnIn <= 0) {
+                if (spawn(progress)) spawnIn = Math.max(700, 1500 - progress * 800) * (0.75 + Math.random() * 0.5);
+                else spawnIn = 200;
+            }
+
+            // work progress
+            if (work) {
+                const remain = work.until - now;
+                workerLabel.textContent = `กำลังแก้ไข #${work.slot + 1}`;
+                workerEl.classList.add('busy');
+                workerBar.style.width = Math.min(100, (1 - remain / work.total) * 100) + '%';
+                if (remain <= 0) {
+                    const a = slots[work.slot];
+                    if (a) {
+                        score += SEV[a.sev].pts;
+                        resolved++;
+                        removeAlert(work.slot);
+                        sfx.done();
+                    }
+                    work = null;
+                }
+            }
+            if (!work) {
+                workerLabel.textContent = 'ผู้ดูแล: ว่าง';
+                workerEl.classList.remove('busy');
+                workerBar.style.width = '0%';
+            }
+
+            // countdowns
+            for (let i = 0; i < SLOTS; i++) {
+                const a = slots[i];
+                if (!a || a.working) continue;
+                a.left -= dt;
+                const frac = Math.max(0, a.left / a.max);
+                a.bar.style.width = (frac * 100) + '%';
+                a.sec.textContent = (Math.max(0, a.left) / 1000).toFixed(1) + 's';
+                a.el.classList.toggle('urgent', a.left < 3000 && a.sev !== 'info');
+                if (a.left <= 0) {
+                    health -= SEV[a.sev].dmg;
+                    removeAlert(i);
+                    sfx.dmg();
+                    alertsEl.classList.remove('hit-flash');
+                    void alertsEl.offsetWidth;
+                    alertsEl.classList.add('hit-flash');
+                    if (health <= 0) { hud(); return endGame(false); }
+                }
+            }
+
+            hud();
+            raf = requestAnimationFrame(frame);
+        }
+
+        function startGame() {
+            buildSlots();
+            slots = new Array(SLOTS).fill(null);
+            health = 100; score = 0; resolved = 0; decisions = 0; good = 0; work = null;
+            overlay.style.display = 'none';
+            playing = true;
+            startMs = lastMs = performance.now();
+            for (let k = 0; k < 4; k++) spawn(0);      // opening wave: 4 alerts at once
+            spawnIn = 1800;
+            workerLabel.textContent = 'ผู้ดูแล: ว่าง';
+            workerEl.classList.remove('busy');
+            workerBar.style.width = '0%';
+            hud();
+            cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(frame);
+        }
+
+        function rating(s) {
+            if (s >= 10500) return 'จัดการวิกฤตได้ยอดเยี่ยม';
+            if (s >= 7500) return 'ไวกว่าค่าเฉลี่ย';
+            if (s >= 4500) return 'ปกติ';
+            return 'ลองฝึกจัดลำดับอีกนิด';
+        }
+
+        function endGame(survived) {
+            playing = false;
+            cancelAnimationFrame(raf);
+            sfx.end();
+            const bonus = survived ? Math.round(Math.max(0, health) * 5) : 0;
+            const total = score + bonus;
+            const isNew = saveBest(total);
+            overlayTitle.textContent = survived ? (isNew ? 'ผลดีที่สุดใหม่' : 'ครบกะแล้ว') : 'ระบบล่ม';
+            overlayDesc.innerHTML = `
+                คะแนนรวม<br>
+                <span class="big-num">${total}</span><br>
+                <span style="color:var(--muted);">${survived ? rating(total) : 'ระบบล่มก่อนครบกะ'} · แก้ไขแล้ว ${resolved} รายการ${survived ? ` · โบนัสสถานะระบบ +${bonus}` : ''}<br>เลือกตัวที่ใกล้ระเบิดที่สุดก่อน ${decisions ? Math.round(good / decisions * 100) : 0}% (${good}/${decisions} ครั้ง)${isNew ? '<br>บันทึกผลดีที่สุดใหม่แล้ว' : ''}</span>`;
+            startBtn.textContent = 'ทำอีกรอบ';
+            showBest();
+            overlay.style.display = 'flex';
+        }
+
+        // --- events ---
+        // e.code is layout-independent, so the number keys work with a Thai keyboard too
+        document.addEventListener('keydown', (e) => {
+            if (!playing) {
+                if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); startGame(); }
+                return;
+            }
+            const m = /^(?:Digit|Numpad)([1-5])$/.exec(e.code);
+            if (m && !e.repeat) { e.preventDefault(); take(parseInt(m[1], 10) - 1); }
+        });
+        startBtn.addEventListener('click', () => { startBtn.blur(); startGame(); });
+        soundBtn.addEventListener('click', () => {
+            muted = !muted;
+            soundIcon.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('muted', muted);
+        });
+
+        buildSlots();
+        showBest();
+    </script>
+</body>
+</html>

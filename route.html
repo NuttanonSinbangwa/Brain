@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Planner - วางเส้นทางงาน</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="nav.css">
+    <script src="theme.js"></script>
+    <style>
+        .status {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            background: var(--bg-soft);
+            color: var(--muted);
+            margin-bottom: 10px;
+            transition: background 0.25s, color 0.25s;
+        }
+        .status.watch { background: var(--bad-soft); color: var(--bad); }
+        .status.go { background: var(--good-soft); color: var(--good); }
+        :root[data-theme="office"] .status { border-radius: 4px; }
+
+        .countbar {
+            height: 4px;
+            border-radius: 2px;
+            background: var(--line);
+            overflow: hidden;
+            max-width: 420px;
+            margin: 0 auto 14px;
+            visibility: hidden;
+        }
+        .countbar i { display: block; height: 100%; background: var(--bad); transform-origin: left; }
+        .countbar.run { visibility: visible; }
+        .countbar.run i { animation: drain var(--ms, 3000ms) linear forwards; }
+        @keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+        .board {
+            display: grid;
+            gap: 8px;
+            max-width: 420px;
+            margin: 0 auto 16px;
+            touch-action: manipulation;
+        }
+        .node {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-soft);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            color: var(--muted);
+            font-size: 1.15rem;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+        }
+        .node.start { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+        .node.goal { border-color: var(--good); color: var(--good); background: var(--good-soft); }
+        .node.trail { background: var(--accent-soft); border-color: var(--accent); }
+        .node.next { border-style: dashed; border-color: var(--accent); }
+        .node.next:hover { background: var(--accent-soft); }
+        .node.here { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+        .node.block { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
+        .node.hit { animation: shake 0.35s ease-in-out; }
+        .node.nope { animation: shake 0.25s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .tip { color: var(--muted); font-size: 0.8rem; font-weight: 300; margin-top: 6px; }
+        .tip i { margin-right: 6px; color: var(--accent); }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--surface);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 24px;
+            gap: 14px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+        .overlay h2 { font-size: 1.5rem; font-weight: 600; }
+        .best-record { font-size: 0.85rem; color: var(--muted); }
+        .rules-box {
+            background: var(--bg-soft);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            font-weight: 300;
+            text-align: left;
+            width: 100%;
+        }
+        .rules-box b { font-weight: 600; }
+        .big-num { font-size: 2.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+        #lives-val { color: var(--bad); }
+
+        :root[data-theme="office"] .node { border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <nav class="game-nav" style="--nav-max: 520px">
+        <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
+        <div class="nav-brand">WORKDESK</div>
+        <div class="nav-actions">
+            <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
+        </div>
+    </nav>
+
+    <div class="panel" style="--w: 520px; min-height: 560px;">
+        <h1 class="title">Route Planner</h1>
+        <p class="subtitle">จำตำแหน่งไฟร์วอลล์ แล้ววางเส้นทางจากต้นทางไปปลายทางโดยไม่ชน</p>
+
+        <div class="stats" style="--cols: 3">
+            <div><span class="stat-label">ด่าน</span><span id="level-val" class="stat-value">1</span></div>
+            <div><span class="stat-label">คะแนน</span><span id="score-val" class="stat-value">0</span></div>
+            <div><span class="stat-label">โอกาส</span><span id="lives-val" class="stat-value"></span></div>
+        </div>
+
+        <div id="status" class="status">กด "เริ่มงาน" เพื่อเริ่ม</div>
+        <div id="countbar" class="countbar"><i></i></div>
+
+        <div id="board" class="board"></div>
+
+        <button id="ready-btn" class="btn btn-ghost" style="display:none"><i class="fa-solid fa-forward"></i> พร้อมแล้ว (Space)</button>
+        <p class="tip"><i class="fa-solid fa-hand-pointer"></i>แตะช่องที่ติดกันเพื่อเดิน หรือใช้ลูกศร / W A S D แตะช่องก่อนหน้าเพื่อถอยกลับ</p>
+
+        <div class="overlay" id="overlay">
+            <h2 id="overlay-title">Route Planner</h2>
+            <div class="best-record" id="best-record">ผลดีที่สุด: 0</div>
+            <div class="rules-box" id="overlay-desc">
+                แผนผังจะแสดง <b>ไฟร์วอลล์</b> (ช่องสีแดง) ให้ดูไม่กี่วินาที แล้วซ่อนไว้<br>
+                จำตำแหน่งให้ได้ แล้วเดินจาก <b>จุดเริ่ม</b> ไป <b>ธงปลายทาง</b> ผ่านช่องที่ติดกัน<br><br>
+                ชนไฟร์วอลล์เสีย <b>1 โอกาส</b> (มี 3 โอกาส) ช่องที่ชนจะเปิดเผยถาวรในด่านนั้น<br>
+                ผ่านด่านได้เร็วและไม่ชนจะได้โบนัส ด่านยิ่งสูง แผนผังยิ่งใหญ่และเวลาจำยิ่งสั้น
+            </div>
+            <button class="btn" id="start-btn">เริ่มงาน</button>
+        </div>
+    </div>
+
+    <script>
+        const MAX_LIVES = 3;
+        const $ = (id) => document.getElementById(id);
+        const board = $('board'), statusEl = $('status'), countbar = $('countbar');
+        const levelVal = $('level-val'), scoreVal = $('score-val'), livesVal = $('lives-val');
+        const overlay = $('overlay'), overlayTitle = $('overlay-title'), overlayDesc = $('overlay-desc');
+        const bestRecord = $('best-record'), startBtn = $('start-btn'), readyBtn = $('ready-btn');
+        const soundBtn = $('sound-btn'), soundIcon = $('sound-icon');
+
+        let level = 1, score = 0, lives = MAX_LIVES, size = 4;
+        let startI = 0, goalI = 0, pathCells = [];
+        let blockers = new Set(), known = new Set(), trail = [], pos = 0;
+        let phase = 'idle';     // idle | show | play | between | over
+        let hitsThisLevel = 0, playStart = 0, showTimer = null, nextTimer = null;
+        let nodes = [], muted = false;
+
+        // --- audio ---
+        let audioCtx = null;
+        function beep(freq, dur, type = 'sine', vol = 0.07) {
+            if (muted) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const t = audioCtx.currentTime;
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t); o.stop(t + dur);
+            } catch (e) {}
+        }
+        const sfx = {
+            step: () => beep(440 + trail.length * 25, 0.05, 'sine', 0.05),
+            go: () => beep(660, 0.08),
+            bad: () => beep(140, 0.28, 'triangle', 0.14),
+            win: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => beep(f, 0.16, 'triangle', 0.09), i * 70)),
+            end: () => [392, 330, 262, 196].forEach((f, i) => setTimeout(() => beep(f, 0.22, 'triangle', 0.1), i * 120))
+        };
+
+        // --- storage (higher = better) ---
+        function getUser() {
+            try { return JSON.parse(localStorage.getItem('arcade_current_user')) || { username: 'guest' }; }
+            catch (e) { return { username: 'guest' }; }
+        }
+        function readScores() {
+            try { return JSON.parse(localStorage.getItem('arcade_route_scores') || '{}'); }
+            catch (e) { return {}; }
+        }
+        function showBest() {
+            bestRecord.textContent = `ผลดีที่สุด: ${readScores()[getUser().username] || 0}`;
+        }
+        function saveBest(v) {
+            const s = readScores();
+            const u = getUser().username;
+            if (v > (s[u] || 0)) {
+                s[u] = v;
+                try { localStorage.setItem('arcade_route_scores', JSON.stringify(s)); } catch (e) {}
+                return true;
+            }
+            return false;
+        }
+
+        // --- map helpers ---
+        function shuffle(a) {
+            const arr = a.slice();
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+        const rcOf = (i) => [Math.floor(i / size), i % size];
+        const idxOf = (r, c) => r * size + c;
+        function neighbors(i) {
+            const [r, c] = rcOf(i), out = [];
+            if (r > 0) out.push(idxOf(r - 1, c));
+            if (r < size - 1) out.push(idxOf(r + 1, c));
+            if (c > 0) out.push(idxOf(r, c - 1));
+            if (c < size - 1) out.push(idxOf(r, c + 1));
+            return out;
+        }
+        function adjacent(a, b) {
+            const [r1, c1] = rcOf(a), [r2, c2] = rcOf(b);
+            return Math.abs(r1 - r2) + Math.abs(c1 - c2) === 1;
+        }
+        function cfg(l) {
+            return {
+                size: l <= 2 ? 4 : l <= 5 ? 5 : l <= 9 ? 6 : 7,
+                showMs: Math.max(1500, 3400 - l * 150)
+            };
+        }
+
+        // a guaranteed safe route: random self-avoiding walk, falling back to an L-shaped path
+        function makeSafePath() {
+            const limit = Math.floor(size * size * 0.6);
+            for (let attempt = 0; attempt < 60; attempt++) {
+                const path = [startI], seen = new Set([startI]);
+                let steps = 0;
+                const dfs = (i) => {
+                    if (i === goalI) return true;
+                    if (++steps > 400) return false;
+                    for (const n of shuffle(neighbors(i))) {
+                        if (seen.has(n)) continue;
+                        seen.add(n); path.push(n);
+                        if (dfs(n)) return true;
+                        path.pop(); seen.delete(n);
+                    }
+                    return false;
+                };
+                if (dfs(startI) && path.length <= limit) return path;
+            }
+            const [sr, sc] = rcOf(startI), [gr, gc] = rcOf(goalI);
+            const path = [startI];
+            let r = sr, c = sc;
+            while (r !== gr) { r += Math.sign(gr - r); path.push(idxOf(r, c)); }
+            while (c !== gc) { c += Math.sign(gc - c); path.push(idxOf(r, c)); }
+            return path;
+        }
+
+        function buildMap() {
+            const c = cfg(level);
+            size = c.size;
+            const corners = [[0, 0], [0, size - 1], [size - 1, 0], [size - 1, size - 1]];
+            const s = corners[Math.floor(Math.random() * 4)];
+            startI = idxOf(s[0], s[1]);
+            goalI = idxOf(size - 1 - s[0], size - 1 - s[1]);
+            pathCells = makeSafePath();
+
+            const onPath = new Set(pathCells);
+            const free = [];
+            for (let i = 0; i < size * size; i++) if (!onPath.has(i)) free.push(i);
+            const count = Math.min(Math.floor(free.length * 0.75), 2 + Math.ceil(level * 1.2));
+            blockers = new Set(shuffle(free).slice(0, count));
+            known = new Set();
+            trail = [startI];
+            pos = startI;
+            hitsThisLevel = 0;
+        }
+
+        // --- rendering ---
+        const ICON_BLOCK = '<i class="fa-solid fa-fire"></i>';
+        function renderBoard() {
+            board.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            board.innerHTML = '';
+            nodes = [];
+            for (let i = 0; i < size * size; i++) {
+                const n = document.createElement('div');
+                n.className = 'node';
+                n.addEventListener('pointerdown', (e) => { e.preventDefault(); stepTo(i); });
+                board.appendChild(n);
+                nodes.push(n);
+            }
+            render();
+        }
+
+        function render() {
+            const inTrail = new Set(trail);
+            nodes.forEach((n, i) => {
+                const showBlock = phase === 'show' ? blockers.has(i) : known.has(i);
+                let cls = 'node', html = '';
+                if (i === startI) cls += ' start';
+                if (i === goalI) cls += ' goal';
+                if (inTrail.has(i)) cls += ' trail';
+                if (phase === 'play' && !inTrail.has(i) && adjacent(pos, i) && !known.has(i)) cls += ' next';
+                if (showBlock) { cls += ' block'; html = ICON_BLOCK; }
+                else if (i === pos && phase !== 'idle') { cls += ' here'; html = '<i class="fa-solid fa-user"></i>'; }
+                else if (i === goalI) html = '<i class="fa-solid fa-flag-checkered"></i>';
+                else if (i === startI) html = '<i class="fa-solid fa-play"></i>';
+                n.className = cls;
+                if (n.innerHTML !== html) n.innerHTML = html;
+            });
+        }
+
+        function setStatus(cls, text) {
+            statusEl.className = 'status ' + cls;
+            statusEl.textContent = text;
+        }
+        function hearts(n) {
+            return '<i class="fa-solid fa-heart"></i>'.repeat(n) + '<i class="fa-regular fa-heart"></i>'.repeat(MAX_LIVES - n);
+        }
+        function hud() {
+            levelVal.textContent = level;
+            scoreVal.textContent = score;
+            livesVal.innerHTML = hearts(lives);
+        }
+
+        // --- flow ---
+        function startGame() {
+            clearTimeout(showTimer); clearTimeout(nextTimer);
+            level = 1; score = 0; lives = MAX_LIVES;
+            overlay.style.display = 'none';
+            hud();
+            startLevel();
+        }
+
+        function startLevel() {
+            buildMap();
+            phase = 'show';
+            renderBoard();
+            hud();
+            const ms = cfg(level).showMs;
+            setStatus('watch', 'จำตำแหน่งไฟร์วอลล์ให้ดี');
+            readyBtn.style.display = '';
+            countbar.style.setProperty('--ms', ms + 'ms');
+            countbar.classList.remove('run');
+            void countbar.offsetWidth;
+            countbar.classList.add('run');
+            clearTimeout(showTimer);
+            showTimer = setTimeout(beginPlay, ms);
+        }
+
+        function beginPlay() {
+            if (phase !== 'show') return;
+            clearTimeout(showTimer);
+            phase = 'play';
+            playStart = performance.now();
+            countbar.classList.remove('run');
+            readyBtn.style.display = 'none';
+            setStatus('go', 'ไฟร์วอลล์ถูกซ่อนแล้ว วางเส้นทางไปที่ธง');
+            sfx.go();
+            render();
+        }
+
+        function stepTo(i) {
+            if (phase !== 'play' || i === pos) return;
+            if (trail.length >= 2 && i === trail[trail.length - 2]) {      // step back
+                trail.pop(); pos = i; sfx.step(); render(); return;
+            }
+            if (!adjacent(pos, i) || trail.includes(i)) {
+                nodes[i].classList.remove('nope'); void nodes[i].offsetWidth; nodes[i].classList.add('nope');
+                return;
+            }
+            if (blockers.has(i)) return hit(i);
+            trail.push(i); pos = i;
+            sfx.step();
+            render();
+            if (i === goalI) clearLevel();
+        }
+
+        function hit(i) {
+            known.add(i);
+            hitsThisLevel++;
+            lives--;
+            sfx.bad();
+            hud();
+            render();
+            nodes[i].classList.remove('hit'); void nodes[i].offsetWidth; nodes[i].classList.add('hit');
+            if (lives <= 0) { phase = 'between'; nextTimer = setTimeout(endGame, 800); return; }
+            setStatus('watch', 'ชนไฟร์วอลล์ เริ่มเดินใหม่จากจุดเริ่ม');
+            phase = 'between';
+            nextTimer = setTimeout(() => {
+                trail = [startI]; pos = startI;
+                phase = 'play';
+                setStatus('go', 'ลองใหม่ ช่องสีแดงคือไฟร์วอลล์ที่เจอแล้ว');
+                render();
+            }, 700);
+        }
+
+        function clearLevel() {
+            phase = 'between';
+            const secs = (performance.now() - playStart) / 1000;
+            const speed = Math.max(0, 50 - Math.floor(secs * 3));
+            const clean = hitsThisLevel === 0 ? 50 : 0;
+            const pts = 100 + blockers.size * 15 + speed + clean;
+            score += pts;
+            hud();
+            sfx.win();
+            setStatus('go', `ผ่านด่าน ${level} · +${pts}${clean ? ' (ไม่ชนเลย)' : ''}`);
+            nextTimer = setTimeout(() => { level++; startLevel(); }, 1100);
+        }
+
+        function rating(cleared) {
+            if (cleared >= 10) return 'วางแผนล่วงหน้าได้ยอดเยี่ยม';
+            if (cleared >= 6) return 'ไวกว่าค่าเฉลี่ย';
+            if (cleared >= 3) return 'ปกติ';
+            return 'ลองฝึกจำตำแหน่งอีกนิด';
+        }
+
+        function endGame() {
+            phase = 'over';
+            readyBtn.style.display = 'none';
+            countbar.classList.remove('run');
+            sfx.end();
+            const isNew = saveBest(score);
+            const cleared = level - 1;
+            overlayTitle.textContent = isNew ? 'ผลดีที่สุดใหม่' : 'หมดโอกาส';
+            overlayDesc.innerHTML = `
+                คะแนนรวม<br>
+                <span class="big-num">${score}</span><br>
+                <span style="color:var(--muted);">${rating(cleared)} · ผ่าน ${cleared} ด่าน${isNew ? '<br>บันทึกผลดีที่สุดใหม่แล้ว' : ''}</span>`;
+            startBtn.textContent = 'ทำอีกรอบ';
+            showBest();
+            overlay.style.display = 'flex';
+        }
+
+        // --- input ---
+        startBtn.addEventListener('click', () => { startBtn.blur(); startGame(); });
+        readyBtn.addEventListener('click', () => { readyBtn.blur(); beginPlay(); });
+
+        // e.code is layout-independent, so W/A/S/D works with a Thai keyboard too
+        const DIRS = {
+            ArrowUp: [-1, 0], KeyW: [-1, 0], ArrowDown: [1, 0], KeyS: [1, 0],
+            ArrowLeft: [0, -1], KeyA: [0, -1], ArrowRight: [0, 1], KeyD: [0, 1]
+        };
+        document.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+            if (phase === 'idle' || phase === 'over') {
+                if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); startGame(); }
+                return;
+            }
+            if (phase === 'show' && (e.code === 'Space' || e.code === 'Enter')) { e.preventDefault(); beginPlay(); return; }
+            const d = DIRS[e.code];
+            if (!d || phase !== 'play') return;
+            e.preventDefault();
+            const [r, c] = rcOf(pos);
+            const nr = r + d[0], nc = c + d[1];
+            if (nr < 0 || nc < 0 || nr >= size || nc >= size) return;
+            stepTo(idxOf(nr, nc));
+        });
+
+        soundBtn.addEventListener('click', () => {
+            muted = !muted;
+            soundIcon.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            soundBtn.classList.toggle('muted', muted);
+        });
+
+        // preview behind the start screen
+        buildMap();
+        renderBoard();
+        hud();
+        showBest();
+    </script>
+</body>
+</html>
