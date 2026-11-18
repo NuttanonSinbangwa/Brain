@@ -3,705 +3,255 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workdesk</title>
+    <title>Workdesk - หน้าหลัก</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="nav.css">
+    <link rel="stylesheet" href="common.css">
     <script src="theme.js"></script>
     <style>
-        .hub-nav { grid-template-columns: 1fr auto; }
-        .hub-nav .nav-brand { color: var(--ink); font-size: 0.9rem; }
+        .hero { text-align: center; margin: 36px 0 28px; }
+        .hero .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 4px 14px; margin-bottom: 14px; }
+        .hero h1 { font-size: 2.2rem; font-weight: 600; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+        .hero p { color: var(--muted); font-weight: 300; margin: 10px auto 0; max-width: 460px; line-height: 1.7; }
+        .hero-cta { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+        .hero-cta .btn { width: auto; padding-inline: 24px; text-decoration: none; }
+        .btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 22px; height: 46px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; font-weight: 500; font-size: 0.92rem; }
+        .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
 
-        .hero { text-align: center; margin: 28px 0 36px; }
-        .hero h1 { font-size: 2.2rem; font-weight: 600; letter-spacing: -0.02em; }
-        .hero p { color: var(--muted); font-weight: 300; margin-top: 8px; max-width: 420px; margin-inline: auto; }
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .stat-tile { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; }
+        .stat-tile .k { font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+        .stat-tile .v { font-size: 1.6rem; font-weight: 600; margin-top: 6px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .stat-tile .v small { font-size: 0.85rem; color: var(--muted); font-weight: 400; }
+        .bar { height: 6px; background: var(--bg-soft); border-radius: 999px; margin-top: 10px; overflow: hidden; }
+        .bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; transition: width 0.4s; }
 
-        .games {
-            width: 100%;
-            max-width: 880px;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-        }
+        .guest-banner { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; background: var(--accent-soft); border-radius: 18px; padding: 16px 20px; margin-top: 12px; }
+        .guest-banner div { font-size: 0.88rem; line-height: 1.6; color: var(--ink); }
+        .guest-banner div span { color: var(--muted); font-weight: 300; }
+        .guest-banner button { white-space: nowrap; }
 
-        .game-card {
-            background: var(--surface);
-            border: 1px solid var(--line);
-            border-radius: 22px;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            gap: 20px;
-            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
-        }
-        .game-card:hover {
-            border-color: var(--accent);
-            transform: translateY(-3px);
-            box-shadow: var(--shadow);
-        }
+        .rec { max-width: none; }
+        .rec .game-card { flex-direction: row; align-items: center; gap: 22px; }
+        .rec .rec-main { flex: 1; min-width: 0; }
+        .rec .rec-side { width: 220px; flex-shrink: 0; }
+        .rec .rec-side .best { margin-bottom: 10px; }
+        .rec .btn { text-decoration: none; }
 
-        .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .card-icon {
-            width: 48px; height: 48px;
-            border-radius: 14px;
-            background: var(--accent-soft);
-            color: var(--accent);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem;
-        }
-        .chip {
-            font-size: 0.72rem;
-            color: var(--muted);
-            border: 1px solid var(--line);
-            border-radius: 999px;
-            padding: 3px 12px;
-        }
-        .game-card h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 6px; }
-        .game-card p { color: var(--muted); font-size: 0.88rem; font-weight: 300; line-height: 1.6; }
+        .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        .cat-card { display: block; text-decoration: none; color: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 20px; transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s; }
+        .cat-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow); }
+        .cat-card .top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .cat-card .card-icon { width: 40px; height: 40px; font-size: 1.1rem; border-radius: 12px; }
+        .cat-card h3 { font-size: 1rem; font-weight: 600; }
+        .cat-card p { font-size: 0.8rem; color: var(--muted); font-weight: 300; line-height: 1.6; margin-bottom: 12px; }
+        .cat-card .prog { font-size: 0.75rem; color: var(--muted); display: flex; justify-content: space-between; }
 
-        .best {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            background: var(--bg-soft);
-            border-radius: 12px;
-            padding: 10px 14px;
-            margin-bottom: 12px;
-            font-size: 0.82rem;
-            color: var(--muted);
-        }
-        .best b { color: var(--ink); font-weight: 600; font-size: 0.95rem; font-variant-numeric: tabular-nums; text-align: right; }
-        .best b.small { font-size: 0.8rem; }
+        .record-list { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+        .record { display: flex; align-items: center; gap: 14px; padding: 13px 18px; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
+        .record:last-child { border-bottom: 0; }
+        .record:hover { background: var(--bg-soft); }
+        .record .card-icon { width: 36px; height: 36px; font-size: 0.95rem; border-radius: 10px; }
+        .record .nm { flex: 1; min-width: 0; font-size: 0.9rem; font-weight: 500; }
+        .record .nm small { display: block; font-size: 0.72rem; color: var(--muted); font-weight: 300; }
+        .record .val { font-size: 0.85rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+        .empty { text-align: center; color: var(--muted); font-size: 0.88rem; padding: 28px 20px; font-weight: 300; line-height: 1.7; }
 
-        .user-btn {
-            display: inline-flex; align-items: center; gap: 8px;
-            height: 40px; padding: 0 14px;
-            border-radius: 10px;
-            background: var(--bg-soft);
-            border: 0;
-            color: var(--ink);
-            font-size: 0.85rem; font-weight: 500;
-            cursor: pointer;
-        }
-        .user-btn:hover { background: var(--line); }
-        .user-btn.primary { background: var(--accent); color: var(--on-accent); }
-        .user-btn.primary:hover { opacity: 0.88; background: var(--accent); }
-
-        /* forms */
-        .modal.left { text-align: left; max-width: 400px; position: relative; }
-        .modal-close {
-            position: absolute; top: 12px; right: 12px;
-            width: 36px; height: 36px;
-            border: 0; border-radius: 10px;
-            background: transparent; color: var(--muted);
-            font-size: 1rem; cursor: pointer;
-        }
-        .modal-close:hover { background: var(--bg-soft); color: var(--ink); }
-
-        .tabs { display: flex; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
-        .tab {
-            flex: 1; padding: 10px; text-align: center;
-            background: none; border: 0; border-bottom: 2px solid transparent;
-            color: var(--muted); font-weight: 500; font-size: 0.9rem; cursor: pointer;
-            margin-bottom: -1px;
-        }
-        .tab.on { color: var(--accent); border-bottom-color: var(--accent); }
-
-        .field { margin-bottom: 14px; }
-        .field label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; }
-        .field input {
-            width: 100%;
-            padding: 11px 14px;
-            font: inherit; font-size: 0.9rem;
-            color: var(--ink);
-            background: var(--bg);
-            border: 1px solid var(--line);
-            border-radius: 12px;
-            outline: none;
-            user-select: text; -webkit-user-select: text;
-            transition: border-color 0.2s;
-        }
-        .field input:focus { border-color: var(--accent); }
-        .field input:disabled { opacity: 0.55; cursor: not-allowed; }
-
-        .alert {
-            margin-bottom: 14px;
-            padding: 10px 14px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            background: var(--bad-soft);
-            color: var(--bad);
-        }
-        .hidden { display: none !important; }
-
-        .modal h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 18px; }
-
-        footer { margin-top: 36px; color: var(--muted); font-size: 0.75rem; }
-
-        @media (max-width: 640px) {
-            .games { grid-template-columns: 1fr; }
-            .hero h1 { font-size: 1.8rem; }
+        @media (max-width: 680px) {
+            .hero h1 { font-size: 1.7rem; }
+            .stats-row { grid-template-columns: 1fr; }
+            .cat-grid { grid-template-columns: 1fr; }
+            .rec .game-card { flex-direction: column; align-items: stretch; }
+            .rec .rec-side { width: 100%; }
         }
     </style>
 </head>
 <body>
 
     <nav class="game-nav hub-nav" style="--nav-max: 880px">
-        <div class="nav-brand" style="justify-self:start; padding-left:8px;"><i class="fa-solid fa-briefcase" style="margin-right:8px;color:var(--accent)"></i>WORKDESK</div>
+        <div class="nav-brand" style="justify-self:start; padding-left:8px;"><a href="index.html"><i class="fa-solid fa-briefcase" style="margin-right:8px;color:var(--accent)"></i>WORKDESK</a></div>
         <div class="nav-actions">
+            <a href="index.html" class="nav-link on"><i class="fa-solid fa-house"></i><span>หน้าหลัก</span></a>
+            <a href="Looby.html" class="nav-link"><i class="fa-solid fa-list-check"></i><span>แบบทดสอบ</span></a>
             <div id="user-bar" style="display:flex;align-items:center;gap:6px;"></div>
-            <button id="sound-toggle-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
+            <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
         </div>
     </nav>
 
-    <div class="hero">
-        <h1>งานวันนี้</h1>
-        <p>เลือกงานที่ต้องการทำ ฝึกความจำ สมาธิ และความไวในการตัดสินใจ พร้อมติดตามผลงานของตัวเอง</p>
-    </div>
+    <main class="page">
+        <section class="hero">
+            <div class="eyebrow"><i class="fa-solid fa-brain"></i> แบบทดสอบ</div>
+            <h1 id="hero-title">WORKDESK</h1>
+            <p id="hero-sub">มินิเกมฝึกความจำ สมาธิ ตรรกะ และความไวในการตัดสินใจ พร้อมบันทึกสถิติส่วนตัวของคุณ</p>
+            <div class="hero-cta">
+                <a href="Looby.html" class="btn"><i class="fa-solid fa-play"></i> เริ่มทำแบบทดสอบ</a>
+                <a href="#records" class="btn-outline"><i class="fa-solid fa-trophy"></i> ดูผลงานของฉัน</a>
+            </div>
+        </section>
 
-    <main class="games">
-
-        <div class="game-card">
-            <div>
-                <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-folder-open"></i></div>
-                    <span class="chip">Visual Memory</span>
+        <section>
+            <div class="stats-row">
+                <div class="stat-tile">
+                    <div class="k"><i class="fa-solid fa-circle-check"></i> งานที่ลองแล้ว</div>
+                    <div class="v" id="st-played">0<small>/0</small></div>
+                    <div class="bar"><i id="st-bar" style="width:0"></i></div>
                 </div>
-                <h2>Document Match</h2>
-                <p>เปิดเอกสารและจับคู่รายการที่ตรงกัน ให้ครบด้วยเวลาและจำนวนครั้งน้อยที่สุด</p>
-            </div>
-            <div>
-                <div class="best"><span>เวลาดีที่สุด</span><b id="best-memory-time">--:--</b></div>
-                <a href="memory.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
-            </div>
-        </div>
-
-        <div class="game-card">
-            <div>
-                <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-pen-to-square"></i></div>
-                    <span class="chip">Sequence Sync</span>
+                <div class="stat-tile">
+                    <div class="k"><i class="fa-solid fa-layer-group"></i> หมวดที่ครอบคลุม</div>
+                    <div class="v" id="st-cats">0<small>/4</small></div>
+                    <div class="bar"><i id="st-cbar" style="width:0"></i></div>
                 </div>
-                <h2>Form Sequence</h2>
-                <p>จำลำดับช่องที่ต้องกรอก แล้วกรอกตามให้ถูกต้อง ลำดับสุ่มใหม่ทุกชุด</p>
-            </div>
-            <div>
-                <div class="best"><span>ชุดสูงสุด</span><b id="best-pattern-level">0</b></div>
-                <a href="pattern.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
-            </div>
-        </div>
-
-        <div class="game-card">
-            <div>
-                <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-clipboard-check"></i></div>
-                    <span class="chip">Signal Response</span>
+                <div class="stat-tile">
+                    <div class="k"><i class="fa-solid fa-user"></i> กำลังเล่นในชื่อ</div>
+                    <div class="v" id="st-user">Guest</div>
+                    <div class="k" style="margin-top:10px" id="st-userhint">คะแนนบันทึกเป็น guest</div>
                 </div>
-                <h2>Approval Queue</h2>
-                <p>เห็นสถานะเขียวให้อนุมัติ เห็นสีแดงให้ส่งกลับ ยิ่งตัดสินใจเร็วยิ่งดี</p>
             </div>
-            <div>
-                <div class="best"><span>เฉลี่ยดีที่สุด</span><b id="best-reflex-score">-- ms</b></div>
-                <a href="reflex.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
+            <div class="guest-banner hidden" id="guest-banner">
+                <div>เข้าสู่ระบบเพื่อเก็บสถิติเป็นของคุณเอง<br><span>ตอนนี้คะแนนทั้งหมดถูกบันทึกในชื่อ guest ของเครื่องนี้ ถ้าสมัครสมาชิกจะนำคะแนน guest มาด้วยได้</span></div>
+                <button class="user-btn primary" id="guest-login"><i class="fa-solid fa-user"></i> เข้าสู่ระบบ / สมัครสมาชิก</button>
             </div>
-        </div>
+        </section>
 
-        <div class="game-card">
-            <div>
-                <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-route"></i></div>
-                    <span class="chip">Logic Override</span>
-                </div>
-                <h2>Routing Desk</h2>
-                <p>ส่งงานไปตามทิศ หรือสวนทางเมื่อกฎเปลี่ยน ยิ่งต่อเนื่องผลงานยิ่งคูณ</p>
-            </div>
-            <div>
-                <div class="best"><span>ผลดีที่สุด</span><b id="best-arrow-score">0</b></div>
-                <a href="arrow.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
-            </div>
-        </div>
+        <section class="rec">
+            <h2 class="section-title"><span id="rec-title">งานแนะนำวันนี้</span></h2>
+            <div class="game-card" id="rec-card"></div>
+        </section>
 
-        <div class="game-card">
-            <div>
-                <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-list-ol"></i></div>
-                    <span class="chip">Optical Scan</span>
-                </div>
-                <h2>Optical Sync</h2>
-                <p>ล็อกโฟกัสที่จุดกึ่งกลางตาราง ตรวจจับและกดโหนด 01–25 ให้ไวที่สุด (กดผิดบวกเวลา +1.5 วินาที)</p>
-            </div>
-            <div>
-                <div class="best"><span>เวลาดีที่สุด</span><b id="best-scan-time" class="small">--</b></div>
-                <a href="pa.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
-            </div>
-        </div>
+        <section>
+            <h2 class="section-title"><span>หมวดแบบทดสอบ</span><a href="Looby'.html">ดูทั้งหมด <i class="fa-solid fa-arrow-right"></i></a></h2>
+            <div class="cat-grid" id="cat-grid"></div>
+        </section>
 
-        <div class="game-card">
-            <div>
-                <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-keyboard"></i></div>
-                    <span class="chip">Typing Speed</span>
-                </div>
-                <h2>Rapid Input</h2>
-                <p>พิมพ์ข้อความให้เร็วและแม่นยำ เลือกภาษาไทยหรืออังกฤษ และเลือกเวลา 30 / 60 / 120 วินาที</p>
-            </div>
-            <div>
-                <div class="best"><span>WPM สูงสุด</span><b id="best-typing-wpm">--</b></div>
-                <a href="typing.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
-            </div>
-        </div>
-
-        <div class="game-card">
-            <div>
-                <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-hourglass-half"></i></div>
-                    <span class="chip">Time Sense</span>
-                </div>
-                <h2>Deadline Sense</h2>
-                <p>เห็นเวลาเดินแค่ 2 วินาทีแรก แล้วนับในใจและกดหยุดให้ตรงเป้า 5 วินาที หรือเป้าสุ่มทุกรอบมากที่สุด</p>
-            </div>
-            <div>
-                <div class="best"><span>คลาดเฉลี่ยน้อยสุด</span><b id="best-chrono" class="small">--</b></div>
-                <a href="chrono.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
-            </div>
-        </div>
-
-        <div class="game-card">
-            <div>
-                <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-table-columns"></i></div>
-                    <span class="chip">Multitasking</span>
-                </div>
-                <h2>Dual Desk</h2>
-                <p>ใช้เมาส์ประคองเป้าฝั่งซ้าย พร้อมกดคีย์บอร์ดหลบสิ่งกีดขวางฝั่งขวา ทำสองงานให้ได้พร้อมกัน</p>
-            </div>
-            <div>
-                <div class="best"><span>ผลดีที่สุด</span><b id="best-dual-score">0</b></div>
-                <a href="dual.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
-            </div>
-        </div>
-
-        <div class="game-card">
-            <div>
-                <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
-                    <span class="chip">Anomaly Spotter</span>
-                </div>
-                <h2>Data Audit</h2>
-                <p>เทียบตารางข้อมูล Binary หรือ HEX สองชุด หาช่องที่ผิดปกติ 1 จุดให้เจอเร็วที่สุด</p>
-            </div>
-            <div>
-                <div class="best"><span>ผลดีที่สุด</span><b id="best-audit" class="small">--</b></div>
-                <a href="audit.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
-            </div>
-        </div>
-
-        <div class="game-card">
-            <div>
-                <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-diagram-project"></i></div>
-                    <span class="chip">Spatial Planning</span>
-                </div>
-                <h2>Route Planner</h2>
-                <p>จำตำแหน่งไฟร์วอลล์ในแผนผังเครือข่ายสั้น ๆ แล้ววางเส้นทางจาก S ไป E โดยไม่ชน</p>
-            </div>
-            <div>
-                <div class="best"><span>ผลดีที่สุด</span><b id="best-route">0</b></div>
-                <a href="route.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
-            </div>
-        </div>
-
-        <div class="game-card">
-            <div>
-                <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-crosshairs"></i></div>
-                    <span class="chip">Motion Prediction</span>
-                </div>
-                <h2>Packet Catch</h2>
-                <p>แพ็กเก็ตวิ่งเข้าโซนรบกวนที่บังสายตา คำนวณความเร็วในใจแล้วกดดักให้ตรงเส้นเป้าหมาย</p>
-            </div>
-            <div>
-                <div class="best"><span>คลาดเฉลี่ยน้อยสุด</span><b id="best-intercept" class="small">--</b></div>
-                <a href="intercept.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
-            </div>
-        </div>
-
-        <div class="game-card">
-            <div>
-                <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-filter"></i></div>
-                    <span class="chip">Selective Attention</span>
-                </div>
-                <h2>Focus Filter</h2>
-                <p>มองเฉพาะลูกศรตัวกลางท่ามกลางตัวรอบข้างที่คอยหลอก แล้วกดทิศให้ถูกและเร็ว</p>
-            </div>
-            <div>
-                <div class="best"><span>เฉลี่ยดีที่สุด</span><b id="best-filter">-- ms</b></div>
-                <a href="filter.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
-            </div>
-        </div>
-
-        <div class="game-card">
-            <div>
-                <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-bell"></i></div>
-                    <span class="chip">Priority Triage</span>
-                </div>
-                <h2>Alert Triage</h2>
-                <p>แจ้งเตือนเด้งพร้อมกันหลายระดับ ผู้ดูแลทำได้ทีละงาน เลือกให้ถูกก่อนระบบล่ม</p>
-            </div>
-            <div>
-                <div class="best"><span>ผลดีที่สุด</span><b id="best-triage">0</b></div>
-                <a href="triage.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
-            </div>
-        </div>
-
-        <div class="game-card">
-            <div>
-                <div class="card-top">
-                    <div class="card-icon"><i class="fa-solid fa-lock"></i></div>
-                    <span class="chip">Deductive Logic</span>
-                </div>
-                <h2>Vault Code</h2>
-                <p>เจาะรหัสตู้นิรภัย 4 หลักจากสีใบ้ถูกตำแหน่ง/ผิดตำแหน่ง ใช้ตรรกะตัดตัวเลือกให้เหลือน้อยที่สุด</p>
-            </div>
-            <div>
-                <div class="best"><span>ผลดีที่สุด</span><b id="best-vault">0</b></div>
-                <a href="vault.html" onclick="playClickSound()" class="btn block"><i class="fa-solid fa-play"></i> เริ่มงาน</a>
-            </div>
-        </div>
-
+        <section id="records">
+            <h2 class="section-title"><span>ผลงานของฉัน</span><a href="Looby.html">ไปทำเพิ่ม <i class="fa-solid fa-arrow-right"></i></a></h2>
+            <div class="record-list" id="record-list"></div>
+        </section>
     </main>
 
-    <!-- AUTH MODAL -->
-    <div id="auth-modal" class="modal-backdrop">
-        <div class="modal left">
-            <button class="modal-close" onclick="closeAuthModal()"><i class="fa-solid fa-xmark"></i></button>
+    <footer class="site-foot">Bboss</footer>
 
-            <div class="tabs">
-                <button id="tab-login" class="tab on" onclick="switchAuthTab('login')">เข้าสู่ระบบ</button>
-                <button id="tab-register" class="tab" onclick="switchAuthTab('register')">สมัครสมาชิก</button>
-            </div>
-
-            <div id="auth-alert" class="alert hidden"></div>
-
-            <form id="auth-form" onsubmit="handleAuthSubmit(event)">
-                <div class="field">
-                    <label>Username</label>
-                    <input type="text" id="auth-username" required placeholder="กรอกชื่อผู้ใช้">
-                </div>
-                <div class="field">
-                    <label>Password</label>
-                    <input type="password" id="auth-password" required placeholder="กรอกรหัสผ่าน">
-                </div>
-                <div id="confirm-password-group" class="field hidden">
-                    <label>ยืนยันรหัสผ่าน</label>
-                    <input type="password" id="auth-confirm-password" placeholder="กรอกรหัสผ่านอีกครั้ง">
-                </div>
-                <div id="display-name-group" class="field hidden">
-                    <label>ชื่อที่แสดง</label>
-                    <input type="text" id="auth-displayname" placeholder="เช่น Somchai">
-                </div>
-                <button type="submit" id="auth-submit-btn" class="btn block" style="margin-top:6px;">เข้าสู่ระบบ</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- PROFILE MODAL -->
-    <div id="profile-modal" class="modal-backdrop">
-        <div class="modal left">
-            <button class="modal-close" onclick="closeProfileModal()"><i class="fa-solid fa-xmark"></i></button>
-            <h3>โปรไฟล์ผู้ใช้</h3>
-            <div class="field">
-                <label>Username (เปลี่ยนไม่ได้)</label>
-                <input type="text" id="profile-username" disabled>
-            </div>
-            <div class="field">
-                <label>ชื่อที่แสดง</label>
-                <input type="text" id="profile-displayname">
-            </div>
-            <button onclick="saveProfile()" class="btn block">บันทึกข้อมูล</button>
-        </div>
-    </div>
-
-    <footer>Bboss</footer>
-
+    <script src="common.js"></script>
     <script>
-        let soundMuted = false;
+        const $ = (id) => document.getElementById(id);
+        const { GAMES, CATS } = WD;
 
-        let clickCtx = null;
-        function playClickSound() {
-            if (soundMuted) return;
-            try {
-                if (!clickCtx) clickCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (clickCtx.state === 'suspended') clickCtx.resume();
-                const osc = clickCtx.createOscillator();
-                const gain = clickCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, clickCtx.currentTime);
-                gain.gain.setValueAtTime(0.08, clickCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.0001, clickCtx.currentTime + 0.12);
-                osc.connect(gain);
-                gain.connect(clickCtx.destination);
-                osc.start();
-                osc.stop(clickCtx.currentTime + 0.12);
-            } catch (e) {}
+        function mkIcon(cls) {
+            const d = document.createElement('div');
+            d.className = 'card-icon';
+            const i = document.createElement('i');
+            i.className = 'fa-solid ' + cls;
+            d.appendChild(i);
+            return d;
+        }
+        function el(tag, cls, text) {
+            const e = document.createElement(tag);
+            if (cls) e.className = cls;
+            if (text !== undefined) e.textContent = text;
+            return e;
         }
 
-        const soundBtn = document.getElementById('sound-toggle-btn');
-        const soundIcon = document.getElementById('sound-icon');
-        soundBtn.addEventListener('click', () => {
-            soundMuted = !soundMuted;
-            soundIcon.className = soundMuted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
-            soundBtn.classList.toggle('muted', soundMuted);
-        });
-
-        // --- safe storage helpers ---
-        function readJSON(key, fallback) {
-            try {
-                const raw = localStorage.getItem(key);
-                if (raw === null) return fallback;
-                const v = JSON.parse(raw);
-                return v === null || v === undefined ? fallback : v;
-            } catch (e) { return fallback; }
-        }
-        function writeJSON(key, value) {
-            try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
-        }
-
-        // --- AUTH ---
-        // Session object holds only { username, displayName } (never the password / hash).
-        let currentAuthMode = 'login';
-        let currentUser = (function () {
-            const u = readJSON('arcade_current_user', null);
-            return u && typeof u.username === 'string' ? { username: u.username, displayName: u.displayName || u.username } : null;
-        })();
-
-        function getUsersDB() { return readJSON('arcade_users_db', {}); }
-        function saveUsersDB(db) { writeJSON('arcade_users_db', db); }
-        function hasUser(db, name) { return Object.prototype.hasOwnProperty.call(db, name); }
-
-        async function hashPassword(username, password) {
-            const data = new TextEncoder().encode('workdesk:' + username + ':' + password);
-            if (window.crypto && crypto.subtle) {
-                const buf = await crypto.subtle.digest('SHA-256', data);
-                return 'sha256:' + Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-            }
-            // fallback for non-secure contexts (weak, but never plain text)
-            let h = 5381;
-            data.forEach(b => { h = ((h << 5) + h + b) | 0; });
-            return 'weak:' + (h >>> 0).toString(16);
-        }
-
-        function renderUserBar() {
-            const userBar = document.getElementById('user-bar');
-            userBar.textContent = '';
-
-            if (currentUser) {
-                const profileBtn = document.createElement('button');
-                profileBtn.className = 'user-btn';
-                profileBtn.addEventListener('click', openProfileModal);
-                const icon = document.createElement('i');
-                icon.className = 'fa-solid fa-circle-user';
-                icon.style.color = 'var(--accent)';
-                const name = document.createElement('span');
-                name.textContent = currentUser.displayName || currentUser.username;   // textContent: no HTML injection
-                profileBtn.append(icon, name);
-
-                const outBtn = document.createElement('button');
-                outBtn.className = 'nav-icon-btn';
-                outBtn.title = 'ออกจากระบบ';
-                outBtn.setAttribute('aria-label', 'ออกจากระบบ');
-                outBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i>';
-                outBtn.addEventListener('click', logout);
-
-                userBar.append(profileBtn, outBtn);
+        function renderHero(user) {
+            if (user) {
+                const name = user.displayName || user.username;
+                const h = new Date().getHours();
+                const greet = h < 12 ? 'สวัสดีตอนเช้า' : h < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น';
+                $('hero-title').textContent = greet + ', ' + name;
+                $('hero-sub').textContent = 'เลือกแบบทดสอบได้เลย';
+                $('st-user').textContent = name;
+                $('st-userhint').textContent = '@' + user.username;
             } else {
-                const loginBtn = document.createElement('button');
-                loginBtn.className = 'user-btn primary';
-                loginBtn.innerHTML = '<i class="fa-solid fa-user"></i> เข้าสู่ระบบ';
-                loginBtn.addEventListener('click', () => openAuthModal('login'));
-                userBar.append(loginBtn);
+                $('hero-title').textContent = 'WORKDESK';
+                $('hero-sub').textContent = 'มินิเกมฝึกความจำ สมาธิ ตรรกะ และความไวในการตัดสินใจ พร้อมบันทึกสถิติส่วนตัวของคุณ';
+                $('st-user').textContent = 'Guest';
+                $('st-userhint').textContent = 'คะแนนบันทึกเป็น guest';
             }
-            loadHighScores();
+            $('guest-banner').classList.toggle('hidden', !!user);
         }
 
-        function openAuthModal(mode = 'login') {
-            switchAuthTab(mode);
-            document.getElementById('auth-modal').classList.add('open');
-        }
-        function closeAuthModal() { document.getElementById('auth-modal').classList.remove('open'); }
-
-        function switchAuthTab(mode) {
-            currentAuthMode = mode;
-            const isLogin = mode === 'login';
-            document.getElementById('tab-login').className = 'tab' + (isLogin ? ' on' : '');
-            document.getElementById('tab-register').className = 'tab' + (isLogin ? '' : ' on');
-            document.getElementById('confirm-password-group').classList.toggle('hidden', isLogin);
-            document.getElementById('display-name-group').classList.toggle('hidden', isLogin);
-            document.getElementById('auth-submit-btn').textContent = isLogin ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก';
-            document.getElementById('auth-alert').classList.add('hidden');
+        function renderStats() {
+            const u = WD.name();
+            const played = GAMES.filter((g) => g.best(u) !== null);
+            const cats = new Set(played.map((g) => g.cat));
+            $('st-played').innerHTML = '';
+            $('st-played').append(String(played.length), Object.assign(el('small'), { textContent: '/' + GAMES.length }));
+            $('st-bar').style.width = (played.length / GAMES.length * 100) + '%';
+            $('st-cats').innerHTML = '';
+            $('st-cats').append(String(cats.size), Object.assign(el('small'), { textContent: '/' + CATS.length }));
+            $('st-cbar').style.width = (cats.size / CATS.length * 100) + '%';
         }
 
-        function showAuthError(msg) {
-            const box = document.getElementById('auth-alert');
-            box.textContent = msg;
-            box.classList.remove('hidden');
+        function renderRecommended() {
+            const u = WD.name();
+            const untried = GAMES.filter((g) => g.best(u) === null);
+            const pool = untried.length ? untried : GAMES;
+            const day = Math.floor(Date.now() / 86400000);                 // same suggestion all day, changes tomorrow
+            const g = pool[day % pool.length];
+            $('rec-title').textContent = untried.length ? 'งานแนะนำวันนี้ · ยังไม่เคยลอง' : 'งานแนะนำวันนี้ · ทำลายสถิติตัวเอง';
+
+            const card = $('rec-card');
+            card.textContent = '';
+            const main = el('div', 'rec-main');
+            const top = el('div', 'card-top');
+            top.append(mkIcon(g.icon), el('span', 'chip', g.chip));
+            main.append(top, el('h2', '', g.title), el('p', '', g.desc));
+            const side = el('div', 'rec-side');
+            const best = el('div', 'best');
+            const v = g.best(u);
+            best.append(el('span', '', g.label), el('b', v === null ? 'none' : '', v === null ? 'ยังไม่มีสถิติ' : v));
+            const go = el('a', 'btn block');
+            go.href = g.href;
+            go.innerHTML = '<i class="fa-solid fa-play"></i> เริ่มงาน';
+            side.append(best, go);
+            card.append(main, side);
         }
 
-        function startSession(rec) {
-            currentUser = { username: rec.username, displayName: rec.displayName || rec.username };
-            writeJSON('arcade_current_user', currentUser);
-            closeAuthModal();
-            renderUserBar();
-        }
-
-        async function handleAuthSubmit(e) {
-            e.preventDefault();
-            const username = document.getElementById('auth-username').value.trim();
-            const password = document.getElementById('auth-password').value.trim();
-            const confirmPassword = document.getElementById('auth-confirm-password').value.trim();
-            const displayName = document.getElementById('auth-displayname').value.trim();
-            if (!username || !password) return;
-
-            const db = getUsersDB();
-
-            if (currentAuthMode === 'register') {
-                if (password !== confirmPassword) return showAuthError('รหัสผ่านทั้งสองช่องไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง');
-                if (hasUser(db, username)) return showAuthError('ชื่อผู้ใช้นี้มีในระบบแล้ว กรุณาใช้ชื่ออื่น');
-
-                db[username] = {
-                    username,
-                    passHash: await hashPassword(username, password),
-                    displayName: displayName || username
-                };
-                saveUsersDB(db);
-                startSession(db[username]);
-            } else {
-                const rec = hasUser(db, username) ? db[username] : null;
-                if (!rec) return showAuthError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
-
-                let ok = false;
-                if (rec.passHash) {
-                    ok = rec.passHash === await hashPassword(username, password);
-                } else if (typeof rec.password === 'string') {
-                    // legacy plain-text account: verify once, then migrate to a hash
-                    ok = rec.password === password;
-                    if (ok) {
-                        rec.passHash = await hashPassword(username, password);
-                        delete rec.password;
-                        delete rec.scores;
-                        saveUsersDB(db);
-                    }
-                }
-                if (!ok) return showAuthError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
-                startSession(rec);
-            }
-        }
-
-        function logout() {
-            currentUser = null;
-            try { localStorage.removeItem('arcade_current_user'); } catch (e) {}
-            renderUserBar();
-        }
-
-        function openProfileModal() {
-            if (!currentUser) return;
-            document.getElementById('profile-username').value = currentUser.username;
-            document.getElementById('profile-displayname').value = currentUser.displayName || currentUser.username;
-            document.getElementById('profile-modal').classList.add('open');
-        }
-        function closeProfileModal() { document.getElementById('profile-modal').classList.remove('open'); }
-
-        function saveProfile() {
-            if (!currentUser) return;
-            const name = document.getElementById('profile-displayname').value.trim();
-            if (!name) return;
-
-            currentUser.displayName = name;
-            writeJSON('arcade_current_user', currentUser);
-
-            const db = getUsersDB();
-            if (hasUser(db, currentUser.username)) {
-                db[currentUser.username].displayName = name;
-                saveUsersDB(db);
-            }
-            closeProfileModal();
-            renderUserBar();
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') { closeAuthModal(); closeProfileModal(); }
-        });
-
-        function fmtTime(s) {
-            return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
-        }
-
-        function loadHighScores() {
-            const username = currentUser ? currentUser.username : 'guest';
-            const pick = (key) => {
-                const m = readJSON(key, {});
-                return Object.prototype.hasOwnProperty.call(m, username) ? m[username] : null;
-            };
-
-            const memorySec = pick('arcade_memory_scores');
-            const patternLevel = pick('arcade_pattern_scores');
-            document.getElementById('best-memory-time').textContent = memorySec ? fmtTime(memorySec) : '--:--';
-            document.getElementById('best-pattern-level').textContent = patternLevel || '0';
-
-            const reflexMs = pick('arcade_reflex_ms');
-            document.getElementById('best-reflex-score').textContent = reflexMs ? reflexMs + ' ms' : '-- ms';
-            document.getElementById('best-arrow-score').textContent = pick('arcade_override_scores') || 0;
-
-            const scan = readJSON('arcade_scan_scores', {});
-            const std = scan[username + '_STD'];
-            const glitch = scan[username + '_GLITCH'];
-            const parts = [];
-            if (std) parts.push('STD ' + std.toFixed(2) + 's');
-            if (glitch) parts.push('GLITCH ' + glitch.toFixed(2) + 's');
-            document.getElementById('best-scan-time').textContent = parts.length ? parts.join(' · ') : '--';
-
-            // keys look like "<username>_<th|en>_<seconds>"; match the exact shape so
-            // user "a" never picks up the scores of user "a_b"
-            const typing = readJSON('arcade_typing_scores', {});
-            const prefix = username + '_';
-            let bestWpm = 0;
-            Object.keys(typing).forEach(k => {
-                if (k.indexOf(prefix) !== 0) return;
-                if (!/^(th|en)_\d+$/.test(k.slice(prefix.length))) return;
-                if (typing[k] > bestWpm) bestWpm = typing[k];
+        function renderCats() {
+            const u = WD.name();
+            const grid = $('cat-grid');
+            grid.textContent = '';
+            CATS.forEach((c) => {
+                const list = GAMES.filter((g) => g.cat === c.id);
+                const done = list.filter((g) => g.best(u) !== null).length;
+                const a = el('a', 'cat-card');
+                a.href = 'Looby.html#' + c.id;
+                const top = el('div', 'top');
+                top.append(mkIcon(c.icon), el('h3', '', c.name));
+                const prog = el('div', 'prog');
+                prog.append(el('span', '', list.map((g) => g.title).join(' · ')), el('span', '', done + '/' + list.length));
+                prog.firstChild.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:10px';
+                a.append(top, el('p', '', c.desc), prog);
+                grid.append(a);
             });
-            document.getElementById('best-typing-wpm').textContent = bestWpm ? bestWpm + ' WPM' : '--';
-
-            const chrono = readJSON('arcade_chrono_scores', {});
-            const c5 = chrono[username + '_5'];
-            const cRandom = chrono[username + '_random'];
-            const cParts = [];
-            if (c5 !== undefined) cParts.push('5s ±' + c5 + 'ms');
-            if (cRandom !== undefined) cParts.push('สุ่ม ±' + cRandom + 'ms');
-            document.getElementById('best-chrono').textContent = cParts.length ? cParts.join(' · ') : '--';
-
-            document.getElementById('best-dual-score').textContent = pick('arcade_dual_scores') || 0;
-
-            const audit = readJSON('arcade_audit_scores', {});
-            const aParts = [];
-            if (audit[username + '_BIN']) aParts.push('BIN ' + audit[username + '_BIN']);
-            if (audit[username + '_HEX']) aParts.push('HEX ' + audit[username + '_HEX']);
-            document.getElementById('best-audit').textContent = aParts.length ? aParts.join(' · ') : '--';
-
-            document.getElementById('best-route').textContent = pick('arcade_route_scores') || 0;
-            const icpt = pick('arcade_intercept_scores');
-            document.getElementById('best-intercept').textContent = icpt !== null ? '±' + icpt + ' ms' : '--';
-            const flt = pick('arcade_filter_scores');
-            document.getElementById('best-filter').textContent = flt ? flt + ' ms' : '-- ms';
-            document.getElementById('best-triage').textContent = pick('arcade_triage_scores') || 0;
-            document.getElementById('best-vault').textContent = pick('arcade_vault_scores') || 0;
         }
 
-        window.onload = renderUserBar;
+        function renderRecords() {
+            const u = WD.name();
+            const box = $('record-list');
+            box.textContent = '';
+            const rows = GAMES.map((g) => ({ g, v: g.best(u) })).filter((r) => r.v !== null);
+            if (!rows.length) {
+                box.append(el('div', 'empty', 'ยังไม่มีสถิติ ลองเล่นแบบทดสอบสักงาน แล้วผลดีที่สุดจะมาแสดงที่นี่'));
+                return;
+            }
+            rows.forEach(({ g, v }) => {
+                const a = el('a', 'record');
+                a.href = g.href;
+                const nm = el('div', 'nm', g.title);
+                nm.append(el('small', '', g.label));
+                a.append(mkIcon(g.icon), nm, el('div', 'val', v));
+                box.append(a);
+            });
+        }
+
+        function renderAll(user) {
+            renderHero(user); renderStats(); renderRecommended(); renderCats(); renderRecords();
+        }
+
+        $('guest-login').addEventListener('click', () => WD.openAuth('register'));
+        WD.onUser(renderAll);
+        WD.mount();
     </script>
 </body>
 </html>
