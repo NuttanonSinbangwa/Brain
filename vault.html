@@ -27,7 +27,7 @@
         }
         .hrow {
             display: grid;
-            grid-template-columns: 22px repeat(var(--len, 4), 1fr);
+            grid-template-columns: 22px repeat(var(--len, 4), 1fr) 54px;
             gap: 6px;
             align-items: center;
         }
@@ -49,8 +49,11 @@
         .hrow.cur .tile { background: var(--surface); }
         .hrow.cur .tile.on { border-color: var(--accent); }
         .tile.g { background: var(--good); border-color: var(--good); color: #fff; }
-        .tile.y { background: var(--warn); border-color: var(--warn); color: #fff; }
-        .tile.x { background: var(--line); border-color: var(--line); color: var(--muted); }
+        /* only the exact hits are coloured; misplaced digits are just counted in the badge (so a grey tile never says "this digit is absent") */
+        .tile.n { background: var(--bg-soft); border-color: var(--line); color: var(--ink); }
+        .cnt { font-size: 0.72rem; font-weight: 600; text-align: center; border-radius: 8px; padding: 4px 0; min-height: 22px; font-variant-numeric: tabular-nums; }
+        .cnt.has { background: var(--warn); color: #fff; }
+        .cnt.zero { background: var(--bg-soft); color: var(--muted); font-weight: 400; }
         .hrow.shake { animation: shake 0.3s ease-in-out; }
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
@@ -134,7 +137,7 @@
 </head>
 <body>
     <nav class="game-nav" style="--nav-max: 520px">
-        <a href="index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>หน้าหลัก</span></a>
+        <a href="games.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i><span>แบบทดสอบ</span></a>
         <div class="nav-brand">WORKDESK</div>
         <div class="nav-actions">
             <button id="sound-btn" class="nav-icon-btn" aria-label="เปิด/ปิดเสียง"><i id="sound-icon" class="fa-solid fa-volume-high"></i></button>
@@ -153,8 +156,7 @@
 
         <div class="legend">
             <span><i class="lg"></i>ถูกตัว ถูกตำแหน่ง</span>
-            <span><i class="ly"></i>มีเลขนี้ ผิดตำแหน่ง</span>
-            <span><i class="lx"></i>ไม่มีเลขนี้</span>
+            <span><i class="ly"></i>ตัวเลขถูกแต่ผิดตำแหน่ง (นับเป็นจำนวนท้ายแถว)</span>
         </div>
 
         <div class="banner" id="banner">กดเริ่มงานเพื่อเริ่มเจาะรหัส</div>
@@ -171,8 +173,8 @@
             </div>
             <div class="rules-box" id="overlay-desc">
                 มีตู้นิรภัย <b>3 ใบ</b> แต่ละใบมีรหัสเลข 0–9 <b>ไม่ซ้ำกัน</b> ทายได้ใบละ 8 ครั้ง (4 หลัก) หรือ 10 ครั้ง (5 หลัก)<br>
-                หลังทายแต่ละครั้งจะมีสีบอกใบ้ ใช้ตรรกะตัดตัวเลือกออก ทุกคำตอบควร <b>สอดคล้องกับใบ้ที่ได้มาแล้ว</b><br><br>
-                ยิ่งเปิดได้ในจำนวนครั้งน้อยและเร็ว คะแนนยิ่งสูง (ใบละสูงสุด ~900 / ~1,100) เลขที่ตัดออกแล้วบนแป้นจะจางลง
+                หลังทายแต่ละครั้ง ช่อง <b>เขียว</b> = ถูกตัวถูกตำแหน่ง ส่วนท้ายแถวจะบอก <b>จำนวน</b> เลขที่มีในรหัสแต่อยู่ผิดตำแหน่ง (ไม่บอกว่าตัวไหน) ต้องใช้ตรรกะตัดตัวเลือกเอง ทุกคำตอบควร <b>สอดคล้องกับใบ้ที่ได้มาแล้ว</b><br><br>
+                ยิ่งเปิดได้ในจำนวนครั้งน้อยและเร็ว คะแนนยิ่งสูง (ใบละสูงสุด ~900 / ~1,100) แป้นตัวเลขไม่มีสีช่วย ต้องจำเองว่าตัดเลขไหนไปแล้ว
                 และท้ายเกมจะบอกว่าคุณทายสอดคล้องกับใบ้กี่ครั้ง
             </div>
             <button class="btn" id="start-btn">เริ่มงาน</button>
@@ -182,7 +184,7 @@
     <script>
         const VAULTS = 3;
         const MODES = {
-            STD: { len: 4, tries: 8, key: 'arcade_vault_scores', pass: [1900, 1400, 800] },
+            STD: { len: 4, tries: 8, key: 'arcade_vault_scores', pass: [1500, 1150, 700] },
             HARD: { len: 5, tries: 10, key: 'arcade_vault5_scores', pass: [2000, 1500, 900] }
         };
         let mode = 'STD', LEN = 4, MAX_TRIES = 8;
@@ -255,6 +257,8 @@
             }
             return digits.slice(0, LEN);
         }
+        // what the player actually sees for a guess: which tiles are exact + how many digits are misplaced
+        const seen = (res) => res.map(x => x === 'g' ? 'g' : '-').join('') + res.filter(x => x === 'y').length;
         function evaluate(guess, sec = secret) {
             const res = Array(LEN).fill('x');
             const pool = {};
@@ -286,10 +290,7 @@
             mk('ตรวจ', 'act', submit);
         }
         function paintKeys() {
-            keypadEl.querySelectorAll('.key[data-d]').forEach(b => {
-                const st = keyState[b.dataset.d];
-                b.className = 'key' + (st ? ' ' + st : '');
-            });
+            keypadEl.querySelectorAll('.key[data-d]').forEach(b => { b.className = 'key'; });   // no hints on the keypad
         }
         function buildHistory() {
             historyEl.innerHTML = '';
@@ -298,7 +299,7 @@
             for (let r = 0; r < MAX_TRIES; r++) {
                 const row = document.createElement('div');
                 row.className = 'hrow';
-                row.innerHTML = `<span class="no">${r + 1}</span>` + '<div class="tile"></div>'.repeat(LEN);
+                row.innerHTML = `<span class="no">${r + 1}</span>` + '<div class="tile"></div>'.repeat(LEN) + '<span class="cnt"></span>';
                 historyEl.appendChild(row);
                 rows.push(row);
             }
@@ -353,26 +354,25 @@
             // reasoning check: could this guess still be the secret, given every earlier clue?
             if (guesses.length) {
                 checked++;
-                if (guesses.every(g => evaluate(g.guess, guess).join('') === g.res.join(''))) consistent++;
+                if (guesses.every(g => seen(evaluate(g.guess, guess)) === seen(g.res))) consistent++;
             }
             guesses.push({ guess, res });
             const tiles = rows[tries].querySelectorAll('.tile');
             guess.forEach((d, i) => {
                 tiles[i].textContent = d;
-                tiles[i].className = 'tile ' + res[i];
-                const prev = keyState[d];
-                if (res[i] === 'g') keyState[d] = 'g';
-                else if (res[i] === 'y' && prev !== 'g') keyState[d] = 'y';
-                else if (res[i] === 'x' && !prev) keyState[d] = 'x';
+                tiles[i].className = 'tile ' + (res[i] === 'g' ? 'g' : 'n');
             });
-            paintKeys();
+            const misplaced = res.filter(x => x === 'y').length;
+            const cnt = rows[tries].querySelector('.cnt');
+            cnt.className = 'cnt ' + (misplaced ? 'has' : 'zero');
+            cnt.textContent = misplaced ? 'ผิดที่ ' + misplaced : '—';
             rows[tries].classList.remove('cur');
             tries++;
             input = [];
 
             if (res.every(r => r === 'g')) return solved();
             if (tries >= MAX_TRIES) return failed();
-            setBanner('ยังไม่ถูก ใช้สีใบ้ตัดตัวเลือก', '');
+            setBanner('ยังไม่ถูก ดูเลขเขียวกับจำนวนที่ผิดตำแหน่ง แล้วคิดต่อ', '');
             hud();
             renderCurrent();
         }
