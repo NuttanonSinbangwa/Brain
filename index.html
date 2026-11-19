@@ -120,12 +120,12 @@
         </section>
 
         <section>
-            <h2 class="section-title"><span>หมวดแบบทดสอบ</span><a href="Looby'.html">ดูทั้งหมด <i class="fa-solid fa-arrow-right"></i></a></h2>
+            <h2 class="section-title"><span>หมวดแบบทดสอบ</span><a href="Lobby'.html">ดูทั้งหมด <i class="fa-solid fa-arrow-right"></i></a></h2>
             <div class="cat-grid" id="cat-grid"></div>
         </section>
 
         <section id="records">
-            <h2 class="section-title"><span>ผลงานของฉัน</span><a href="Looby.html">ไปทำเพิ่ม <i class="fa-solid fa-arrow-right"></i></a></h2>
+            <h2 class="section-title"><span>ผลงานของฉัน</span><a href="Lobby.html">ไปทำเพิ่ม <i class="fa-solid fa-arrow-right"></i></a></h2>
             <div class="record-list" id="record-list"></div>
         </section>
     </main>
@@ -215,7 +215,7 @@
                 const list = GAMES.filter((g) => g.cat === c.id);
                 const done = list.filter((g) => g.best(u) !== null).length;
                 const a = el('a', 'cat-card');
-                a.href = 'Looby.html#' + c.id;
+                a.href = 'Lobby.html#' + c.id;
                 const top = el('div', 'top');
                 top.append(mkIcon(c.icon), el('h3', '', c.name));
                 const prog = el('div', 'prog');
